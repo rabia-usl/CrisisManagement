@@ -9,10 +9,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import model.User
 import repository.AppRepository
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
 fun LoginScreen(repository: AppRepository, onLoginSuccess: (User) -> Unit) {
     var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -24,6 +26,7 @@ fun LoginScreen(repository: AppRepository, onLoginSuccess: (User) -> Unit) {
         Text("Afet Koordinasyon Girişi", style = MaterialTheme.typography.h4)
         Spacer(modifier = Modifier.height(24.dp))
 
+        // LoginScreen.kt içindeki TextField kısımlarını şöyle güncelle:
         OutlinedTextField(
             value = phone,
             onValueChange = { phone = it },

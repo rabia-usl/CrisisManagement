@@ -11,6 +11,7 @@ object Users : Table("users") {
     val userId = integer("userid").autoIncrement()
     val userName = varchar("username", 100)
     val phoneNumber = varchar("phonenumber", 10)
+    val password = varchar("password", 50)
     val userRole = varchar("userrole", 50)
     val userLocation = varchar("userlocation", 200)
     override val primaryKey = PrimaryKey(userId)

@@ -11,7 +11,7 @@ class AppRepository {
 
 
     // repository/AppRepository.kt dosyasının içi
-    fun login(phone: String, pass: String): User? { // userName yerine phone ve pass alıyoruz
+    fun login(phone: String, pass: String): User? {
         return transaction {
             Users.selectAll().where {
                 (Users.phoneNumber eq phone) and (Users.password eq pass)
@@ -20,6 +20,7 @@ class AppRepository {
                     id = it[Users.userId],
                     name = it[Users.userName],
                     phone = it[Users.phoneNumber],
+                    password = it[Users.password],
                     role = it[Users.userRole],
                     location = it[Users.userLocation]
                 )
