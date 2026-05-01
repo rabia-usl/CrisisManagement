@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rabiausul.crisismanagementapp.SessionManager
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.AidRequest
 
@@ -25,7 +26,9 @@ fun MyRequestsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) {
         try {
-            val response = RetrofitClient.api.getAllRequests()
+            val response = RetrofitClient.api.getRequestsByVictim(
+                SessionManager.getUserId()
+            )
             if (response.isSuccessful) {
                 requests = response.body() ?: emptyList()
             } else {

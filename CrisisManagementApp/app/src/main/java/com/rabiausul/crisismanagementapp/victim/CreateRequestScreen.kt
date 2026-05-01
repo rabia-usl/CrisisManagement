@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rabiausul.crisismanagementapp.SessionManager
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.AidRequest
 import kotlinx.coroutines.launch
@@ -63,7 +64,6 @@ fun CreateRequestScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
 
-                    // Kategori
                     Text(text = "Kategori:", fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(4.dp))
                     ExposedDropdownMenuBox(
@@ -100,7 +100,6 @@ fun CreateRequestScreen(onBack: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Açıklama
                     Text(text = "Açıklama:", fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
@@ -115,7 +114,6 @@ fun CreateRequestScreen(onBack: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Aciliyet
                     Text(text = "Aciliyet Seviyesi:", fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -139,7 +137,6 @@ fun CreateRequestScreen(onBack: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Etkilenen Kişi Sayısı
                     Text(text = "Etkilenen Kişi Sayısı:", fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
@@ -163,6 +160,7 @@ fun CreateRequestScreen(onBack: () -> Unit) {
                             scope.launch {
                                 try {
                                     val request = AidRequest(
+                                        victimId = SessionManager.getUserId(),
                                         category = category,
                                         description = description,
                                         urgencyLevel = urgencyLevel,

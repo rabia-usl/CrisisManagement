@@ -21,7 +21,7 @@ enum class VictimNavigation {
 }
 
 @Composable
-fun VictimMainScreen() {
+fun VictimMainScreen(onLogout: () -> Unit) {
     var currentScreen by remember { mutableStateOf(VictimNavigation.DASHBOARD) }
 
     when (currentScreen) {
@@ -29,7 +29,8 @@ fun VictimMainScreen() {
             onCreateRequestClick = { currentScreen = VictimNavigation.CREATE_REQUEST },
             onMyRequestsClick = { currentScreen = VictimNavigation.MY_REQUESTS },
             onRequestStatusClick = { currentScreen = VictimNavigation.REQUEST_STATUS },
-            onEmergencyClick = { currentScreen = VictimNavigation.EMERGENCY }
+            onEmergencyClick = { currentScreen = VictimNavigation.EMERGENCY },
+            onLogout = onLogout
         )
         VictimNavigation.CREATE_REQUEST -> CreateRequestScreen(
             onBack = { currentScreen = VictimNavigation.DASHBOARD }
@@ -51,19 +52,35 @@ fun VictimDashboard(
     onCreateRequestClick: () -> Unit,
     onMyRequestsClick: () -> Unit,
     onRequestStatusClick: () -> Unit,
-    onEmergencyClick: () -> Unit
+    onEmergencyClick: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Mağdur Paneli",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Mağdur Paneli",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(
+                onClick = onLogout,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFFE53935)
+                )
+            ) {
+                Text("Çıkış Yap")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),

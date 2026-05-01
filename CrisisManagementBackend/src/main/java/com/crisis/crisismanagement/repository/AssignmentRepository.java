@@ -11,4 +11,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
     List<Assignment> findByRequestId(Integer requestId);
 
     List<Assignment> findByStatus(String status);
+
+    List<Assignment> findByVolunteerId(Integer volunteerId);
+
+    List<Assignment> findByVolunteerIdAndStatus(Integer volunteerId, String status);
 }

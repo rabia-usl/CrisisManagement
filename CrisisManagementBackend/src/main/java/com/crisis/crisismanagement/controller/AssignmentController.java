@@ -30,12 +30,35 @@ public class AssignmentController {
         return assignmentRepository.findByRequestId(requestId);
     }
 
+    @GetMapping("/volunteer/{volunteerId}")
+    public List<Assignment> getByVolunteer(@PathVariable int volunteerId) {
+        return assignmentRepository.findByVolunteerId(volunteerId);
+    }
+
+    @GetMapping("/volunteer/{volunteerId}/status/{status}")
+    public List<Assignment> getByVolunteerAndStatus(
+            @PathVariable int volunteerId,
+            @PathVariable String status) {
+        return assignmentRepository.findByVolunteerIdAndStatus(volunteerId, status);
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
             @PathVariable int id,
             @RequestParam String status) {
         return assignmentRepository.findById(id).map(assignment -> {
             assignment.setStatus(status);
+            return ResponseEntity.ok(assignmentRepository.save(assignment));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}/claim")
+    public ResponseEntity<?> claimAssignment(
+            @PathVariable int id,
+            @RequestParam int volunteerId) {
+        return assignmentRepository.findById(id).map(assignment -> {
+            assignment.setVolunteerId(volunteerId);
+            assignment.setStatus("IN_PROGRESS");
             return ResponseEntity.ok(assignmentRepository.save(assignment));
         }).orElse(ResponseEntity.notFound().build());
     }

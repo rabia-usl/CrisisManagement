@@ -21,7 +21,7 @@ enum class OperatorNavigation {
 }
 
 @Composable
-fun OperatorMainScreen() {
+fun OperatorMainScreen(onLogout: () -> Unit) {
     var currentScreen by remember { mutableStateOf(OperatorNavigation.DASHBOARD) }
 
     when (currentScreen) {
@@ -29,7 +29,8 @@ fun OperatorMainScreen() {
             onRequestsClick = { currentScreen = OperatorNavigation.REQUESTS },
             onResourcesClick = { currentScreen = OperatorNavigation.RESOURCES },
             onMatchesClick = { currentScreen = OperatorNavigation.MATCHES },
-            onPendingClick = { currentScreen = OperatorNavigation.PENDING }
+            onPendingClick = { currentScreen = OperatorNavigation.PENDING },
+            onLogout = onLogout
         )
         OperatorNavigation.REQUESTS -> RequestListScreen(
             onBack = { currentScreen = OperatorNavigation.DASHBOARD }
@@ -51,19 +52,35 @@ fun OperatorDashboard(
     onRequestsClick: () -> Unit,
     onResourcesClick: () -> Unit,
     onMatchesClick: () -> Unit,
-    onPendingClick: () -> Unit
+    onPendingClick: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Operatör Paneli",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Operatör Paneli",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(
+                onClick = onLogout,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFFE53935)
+                )
+            ) {
+                Text("Çıkış Yap")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
