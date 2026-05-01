@@ -21,7 +21,7 @@ enum class VolunteerNavigation {
 }
 
 @Composable
-fun VolunteerMainScreen() {
+fun VolunteerMainScreen(onLogout: () -> Unit) {
     var currentScreen by remember { mutableStateOf(VolunteerNavigation.DASHBOARD) }
 
     when (currentScreen) {
@@ -29,7 +29,8 @@ fun VolunteerMainScreen() {
             onTasksClick = { currentScreen = VolunteerNavigation.TASKS },
             onAddResourceClick = { currentScreen = VolunteerNavigation.ADD_RESOURCE },
             onRequestsClick = { currentScreen = VolunteerNavigation.REQUESTS },
-            onProfileClick = { currentScreen = VolunteerNavigation.ASSIGNED_TASKS }
+            onAssignedTasksClick = { currentScreen = VolunteerNavigation.ASSIGNED_TASKS },
+            onLogout = onLogout
         )
         VolunteerNavigation.TASKS -> VolunteerTasksScreen(
             onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
@@ -51,19 +52,35 @@ fun VolunteerDashboard(
     onTasksClick: () -> Unit,
     onAddResourceClick: () -> Unit,
     onRequestsClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onAssignedTasksClick: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Gönüllü Paneli",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Gönüllü Paneli",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(
+                onClick = onLogout,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFFE53935)
+                )
+            ) {
+                Text("Çıkış Yap")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -96,10 +113,10 @@ fun VolunteerDashboard(
                 onClick = onRequestsClick
             )
             VolunteerDashboardCard(
-                title = "Profilim",
+                title = "Atanan Görevler",
                 color = Color(0xFF8E24AA),
                 modifier = Modifier.weight(1f),
-                onClick = onProfileClick
+                onClick = onAssignedTasksClick
             )
         }
     }

@@ -14,6 +14,9 @@ public class Assignment {
     @Column(name = "requestid")
     private Integer requestId;
 
+    @Column(name = "volunteerid")
+    private Integer volunteerId;
+
     @Column(name = "quantity")
     private Integer quantity;
 
@@ -25,6 +28,9 @@ public class Assignment {
 
     public Integer getRequestId() { return requestId; }
     public void setRequestId(Integer requestId) { this.requestId = requestId; }
+
+    public Integer getVolunteerId() { return volunteerId; }
+    public void setVolunteerId(Integer volunteerId) { this.volunteerId = volunteerId; }
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }

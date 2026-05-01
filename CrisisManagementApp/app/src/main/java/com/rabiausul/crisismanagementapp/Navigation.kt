@@ -27,6 +27,7 @@ fun AppNavigation() {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = { user ->
+                    SessionManager.setUser(user)
                     when (user.userRole?.uppercase()) {
                         "OPERATOR" -> navController.navigate(Screen.Operator.route)
                         "VOLUNTEER" -> navController.navigate(Screen.Volunteer.route)
@@ -38,15 +39,36 @@ fun AppNavigation() {
         }
 
         composable(Screen.Operator.route) {
-            OperatorMainScreen()
+            OperatorMainScreen(
+                onLogout = {
+                    SessionManager.logout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Volunteer.route) {
-            VolunteerMainScreen()
+            VolunteerMainScreen(
+                onLogout = {
+                    SessionManager.logout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Victim.route) {
-            VictimMainScreen()
+            VictimMainScreen(
+                onLogout = {
+                    SessionManager.logout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
