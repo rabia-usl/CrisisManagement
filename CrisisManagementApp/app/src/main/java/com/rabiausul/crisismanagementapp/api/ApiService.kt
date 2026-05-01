@@ -1,6 +1,6 @@
-package com.crisis.crisismanagementapp.api
+package com.rabiausul.crisismanagementapp.api
 
-import com.crisis.disasterapp.model.*
+import com.rabiausul.crisismanagementapp.model.*
 import retrofit2.Response
 import retrofit2.http.*
 

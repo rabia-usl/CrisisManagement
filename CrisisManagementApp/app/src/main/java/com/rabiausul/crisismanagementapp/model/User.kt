@@ -1,4 +1,4 @@
-package com.crisis.disasterapp.model
+package com.rabiausul.crisismanagementapp.model
 
 data class User(
     val userId: Int = 0,

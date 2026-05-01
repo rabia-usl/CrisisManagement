@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
+import com.rabiausul.crisismanagementapp.login.LoginScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +27,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+
+        setContent {
+            LoginScreen()
         }
     }
 }
