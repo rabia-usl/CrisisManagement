@@ -11,15 +11,22 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import com.rabiausul.crisismanagementapp.model.User
+import com.rabiausul.crisismanagementapp.model.UserRole
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
+import com.rabiausul.crisismanagementapp.ui.theme.AccentRed
 import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
 import kotlinx.coroutines.launch
 
-enum class UserRole { VICTIM, VOLUNTEER, OPERATOR }
-
 @Composable
-fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
+fun LoginScreen(
+    onLoginSuccess: (User) -> Unit = {},
+    onNavigateToRegister: () -> Unit = {}
+) {
     var tcNo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf(UserRole.VICTIM) }
@@ -39,120 +46,27 @@ fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
             color = Color.Black,
             contentColor = Color.White
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Giriş Yap",
-                    fontSize = 28.sp,
-                    color = Color(0xFFC0392B)
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = tcNo,
-                    onValueChange = { if (it.length <= 11) tcNo = it },
-                    label = { Text("TC Kimlik No") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.Gray,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.Gray
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Şifre") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.Gray,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.Gray
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text("Rol Seçin:", fontSize = 14.sp)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selectedRole == UserRole.VICTIM,
-                            onClick = { selectedRole = UserRole.VICTIM },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFFC0392B),
-                                unselectedColor = Color.White
-                            )
-                        )
-                        Text("Mağdur")
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selectedRole == UserRole.VOLUNTEER,
-                            onClick = { selectedRole = UserRole.VOLUNTEER },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFFC0392B),
-                                unselectedColor = Color.White
-                            )
-                        )
-                        Text("Gönüllü")
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selectedRole == UserRole.OPERATOR,
-                            onClick = { selectedRole = UserRole.OPERATOR },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFFC0392B),
-                                unselectedColor = Color.White
-                            )
-                        )
-                        Text("Operatör")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        if (tcNo.isEmpty() || password.isEmpty()) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Lütfen tüm alanları doldurun.")
-                            }
-                            return@Button
+            LoginScreenContent(
+                tcNo = tcNo,
+                onTcNoChange = { if (it.length <= 11) tcNo = it },
+                password = password,
+                onPasswordChange = { password = it },
+                selectedRole = selectedRole,
+                onRoleSelected = { selectedRole = it },
+                isLoading = isLoading,
+                onLoginClick = {
+                    if (tcNo.isEmpty() || password.isEmpty()) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Lütfen tüm alanları doldurun.")
                         }
-
+                    } else {
                         isLoading = true
                         scope.launch {
                             try {
                                 val userRequest = User(
                                     identityNumber = tcNo,
                                     userPassword = password,
-                                    userRole = selectedRole.name
+                                    userRole = selectedRole.name // English value (e.g. "VICTIM")
                                 )
                                 val response = RetrofitClient.api.login(userRequest)
                                 if (response.isSuccessful && response.body() != null) {
@@ -166,22 +80,139 @@ fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
                                 isLoading = false
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC0392B)),
-                    enabled = !isLoading
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Giriş Yap", color = Color.White)
                     }
+                },
+                onNavigateToRegister = onNavigateToRegister
+            )
+        }
+    }
+}
+
+@Composable
+fun LoginScreenContent(
+    tcNo: String,
+    onTcNoChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    selectedRole: UserRole,
+    onRoleSelected: (UserRole) -> Unit,
+    isLoading: Boolean,
+    onLoginClick: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Giriş Yap",
+            fontSize = 28.sp,
+            color = AccentRed
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        OutlinedTextField(
+            value = tcNo,
+            onValueChange = onTcNoChange,
+            label = { Text("TC Kimlik No") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = AccentRed,
+                unfocusedLabelColor = Color.Gray,
+                focusedBorderColor = AccentRed,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = AccentRed
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Şifre") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = AccentRed,
+                unfocusedLabelColor = Color.Gray,
+                focusedBorderColor = AccentRed,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = AccentRed
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Rol Seçin:", fontSize = 14.sp, color = Color.LightGray)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UserRole.entries.forEach { role ->
+                val label = when(role) {
+                    UserRole.VICTIM -> "Mağdur"
+                    UserRole.VOLUNTEER -> "Gönüllü"
+                    UserRole.OPERATOR -> "Operatör"
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = selectedRole == role,
+                        onClick = { onRoleSelected(role) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AccentRed,
+                            unselectedColor = Color.White
+                        )
+                    )
+                    Text(label, color = Color.White, fontSize = 14.sp)
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onLoginClick,
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Giriş Yap", color = Color.White, fontSize = 16.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = onNavigateToRegister) {
+            Text(
+                text = buildAnnotatedString {
+                    append("Hesabın yok mu? ")
+                    withStyle(style = SpanStyle(color = AccentRed, fontWeight = FontWeight.Bold)) {
+                        append("Kayıt Ol")
+                    }
+                },
+                color = Color.LightGray,
+                fontSize = 14.sp
+            )
         }
     }
 }
@@ -190,6 +221,26 @@ fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
 @Composable
 fun LoginScreenPreview() {
     CrisisManagementAppTheme {
-        LoginScreen()
+        Scaffold(containerColor = Color.Black) { padding ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                color = Color.Black,
+                contentColor = Color.White
+            ) {
+                LoginScreenContent(
+                    tcNo = "",
+                    onTcNoChange = {},
+                    password = "",
+                    onPasswordChange = {},
+                    selectedRole = UserRole.VICTIM,
+                    onRoleSelected = {},
+                    isLoading = false,
+                    onLoginClick = {},
+                    onNavigateToRegister = {}
+                )
+            }
+        }
     }
 }

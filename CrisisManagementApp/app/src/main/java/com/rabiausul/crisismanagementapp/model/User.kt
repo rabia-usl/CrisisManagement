@@ -1,10 +1,13 @@
 package com.rabiausul.crisismanagementapp.model
 
+import com.google.gson.annotations.SerializedName
+
 data class User(
-    val userId: Int = 0,
-    val userName: String = "",
-    val phoneNumber: String = "",
-    val userRole: String = "",
-    val userPassword: String = "",
-    val identityNumber: String = ""
+    @SerializedName("userId") val userId: Int? = null,
+    @SerializedName("userName") val userName: String = "",
+    @SerializedName("phoneNumber") val phoneNumber: String = "",
+    @SerializedName("userRole") val userRole: String = "",
+    @SerializedName("userPassword") val userPassword: String = "",
+    @SerializedName("identityNumber") val identityNumber: String = "",
+    @SerializedName("userLocation") val userLocation: String? = ""
 )
