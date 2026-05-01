@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import com.rabiausul.crisismanagementapp.operator.OperatorMainScreen
 import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,7 +13,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CrisisManagementAppTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    OperatorMainScreen()
+                    AppNavigation()
                 }
             }
         }

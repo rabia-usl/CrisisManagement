@@ -16,13 +16,13 @@ import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
 import kotlinx.coroutines.launch
 
-enum class UserRole { USER, OPERATOR }
+enum class UserRole { VICTIM, VOLUNTEER, OPERATOR }
 
 @Composable
 fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
     var tcNo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf(UserRole.USER) }
+    var selectedRole by remember { mutableStateOf(UserRole.VICTIM) }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -97,17 +97,29 @@ fun LoginScreen(onLoginSuccess: (User) -> Unit = {}) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(
-                            selected = selectedRole == UserRole.USER,
-                            onClick = { selectedRole = UserRole.USER },
+                            selected = selectedRole == UserRole.VICTIM,
+                            onClick = { selectedRole = UserRole.VICTIM },
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = Color(0xFFC0392B),
                                 unselectedColor = Color.White
                             )
                         )
-                        Text("Kullanıcı")
+                        Text("Mağdur")
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = selectedRole == UserRole.VOLUNTEER,
+                            onClick = { selectedRole = UserRole.VOLUNTEER },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFFC0392B),
+                                unselectedColor = Color.White
+                            )
+                        )
+                        Text("Gönüllü")
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
