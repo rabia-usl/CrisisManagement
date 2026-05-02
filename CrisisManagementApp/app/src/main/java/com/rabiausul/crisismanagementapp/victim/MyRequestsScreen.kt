@@ -17,72 +17,126 @@ import androidx.compose.ui.unit.sp
 import com.rabiausul.crisismanagementapp.SessionManager
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.AidRequest
+import kotlinx.coroutines.launch
 
 @Composable
 fun MyRequestsScreen(onBack: () -> Unit) {
     var requests by remember { mutableStateOf<List<AidRequest>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
+    var requestToDelete by remember { mutableStateOf<AidRequest?>(null) }
 
-    LaunchedEffect(Unit) {
-        try {
-            val response = RetrofitClient.api.getRequestsByVictim(
-                SessionManager.getUserId()
-            )
-            if (response.isSuccessful) {
-                requests = response.body() ?: emptyList()
-            } else {
-                errorMessage = "Talepler yüklenemedi"
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Talepleri yükle
+    fun loadRequests() {
+        scope.launch {
+            isLoading = true
+            errorMessage = ""
+            try {
+                val response = RetrofitClient.api.getRequestsByVictim(SessionManager.getUserId())
+                if (response.isSuccessful) {
+                    requests = response.body() ?: emptyList()
+                } else {
+                    errorMessage = "Talepler yüklenemedi"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Bağlantı hatası: ${e.message}"
+            } finally {
+                isLoading = false
             }
-        } catch (e: Exception) {
-            errorMessage = "Bağlantı hatası: ${e.message}"
-        } finally {
-            isLoading = false
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+    LaunchedEffect(Unit) { loadRequests() }
+
+    // Silme onay dialog'u
+    if (requestToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { requestToDelete = null },
+            title = { Text("Talebi İptal Et") },
+            text = { Text("Bu talebi iptal etmek istediğinizden emin misiniz?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = requestToDelete!!.requestId
+                        requestToDelete = null
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.deleteRequest(id)
+                                if (response.isSuccessful) {
+                                    snackbarHostState.showSnackbar("Talep iptal edildi")
+                                    loadRequests()
+                                } else {
+                                    snackbarHostState.showSnackbar("İptal işlemi başarısız")
+                                }
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar("Bağlantı hatası: ${e.message}")
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                ) {
+                    Text("İptal Et")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { requestToDelete = null }) {
+                    Text("Vazgeç")
+                }
+            }
+        )
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Geri"
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Geri"
+                    )
+                }
+                Text(
+                    text = "Taleplerim",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            Text(
-                text = "Taleplerim",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
 
-        when {
-            isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            errorMessage.isNotEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = errorMessage, color = Color.Red)
+                errorMessage.isNotEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = errorMessage, color = Color.Red)
+                    }
                 }
-            }
-            requests.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "Henüz talebiniz bulunmuyor")
+                requests.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Henüz talebiniz bulunmuyor")
+                    }
                 }
-            }
-            else -> {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(requests) { request ->
-                        MyRequestCard(request = request)
+                else -> {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(requests) { request ->
+                            MyRequestCard(
+                                request = request,
+                                onDeleteClick = { requestToDelete = request }
+                            )
+                        }
                     }
                 }
             }
@@ -91,7 +145,10 @@ fun MyRequestsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun MyRequestCard(request: AidRequest) {
+fun MyRequestCard(
+    request: AidRequest,
+    onDeleteClick: () -> Unit
+) {
     val urgencyColor = when (request.urgencyLevel) {
         3 -> Color(0xFFE53935)
         2 -> Color(0xFFFB8C00)
@@ -142,12 +199,15 @@ fun MyRequestCard(request: AidRequest) {
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = request.description, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Etkilenen: ${request.vulnerableCount} kişi",
@@ -164,6 +224,19 @@ fun MyRequestCard(request: AidRequest) {
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 12.sp
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sadece PENDING durumundaki talepler iptal edilebilir
+            if (request.status == "PENDING") {
+                OutlinedButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935))
+                ) {
+                    Text("İptal Et")
                 }
             }
         }

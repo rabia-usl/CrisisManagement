@@ -1,5 +1,7 @@
 package com.crisis.crisismanagement.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.crisis.crisismanagement.model.User;
 import com.crisis.crisismanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +41,13 @@ public class UserController {
                 loginRequest.getUserPassword()
         );
         if (user != null) {
-            return ResponseEntity.ok(user);
+            Map<String, Object> response = new HashMap<>();
+            response.put("userId", user.getUserId());
+            response.put("userName", user.getUserName());
+            response.put("phoneNumber", user.getPhoneNumber());
+            response.put("userRole", user.getUserRole());
+            response.put("identityNumber", user.getIdentityNumber());
+            return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(401).body("Hatalı TC numarası veya şifre");
     }

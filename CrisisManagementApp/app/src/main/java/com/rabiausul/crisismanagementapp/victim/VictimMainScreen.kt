@@ -9,8 +9,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
 
 enum class VictimNavigation {
     DASHBOARD,
@@ -176,5 +178,40 @@ fun VictimDashboardCard(
                 color = Color.White
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun VictimMainScreenPreview() {
+    CrisisManagementAppTheme {
+        VictimMainScreen(onLogout = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun VictimDashboardPreview() {
+    CrisisManagementAppTheme {
+        VictimDashboard(
+            onCreateRequestClick = {},
+            onMyRequestsClick = {},
+            onRequestStatusClick = {},
+            onEmergencyClick = {},
+            onMapClick = {},
+            onLogout = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun VictimDashboardCardPreview() {
+    CrisisManagementAppTheme {
+        VictimDashboardCard(
+            title = "Yardım Talep Et",
+            color = Color(0xFF1E88E5),
+            onClick = {}
+        )
     }
 }

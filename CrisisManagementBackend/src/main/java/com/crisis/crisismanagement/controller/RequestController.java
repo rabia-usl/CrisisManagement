@@ -6,12 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Point;
-
 
 @RestController
 @RequestMapping("/api/requests")
@@ -20,10 +21,24 @@ public class RequestController {
     @Autowired
     private RequestRepository requestRepository;
 
+    // Point içeren AidRequest'i JSON-safe Map'e çevirir
+    private Map<String, Object> toMap(AidRequest r) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("requestId", r.getRequestId());
+        map.put("victimId", r.getVictimId());
+        map.put("category", r.getCategory());
+        map.put("urgencyLevel", r.getUrgencyLevel());
+        map.put("status", r.getStatus());
+        map.put("description", r.getDescription());
+        map.put("vulnerableCount", r.getVulnerableCount());
+        map.put("times", r.getTimes());
+        return map;
+    }
+
     // Tüm requestleri getir
     @GetMapping
-    public List<AidRequest> getAll() {
-        return requestRepository.findAll();
+    public List<Map<String, Object>> getAll() {
+        return requestRepository.findAll().stream().map(this::toMap).toList();
     }
 
     // Yeni request oluştur
@@ -42,27 +57,27 @@ public class RequestController {
         }
 
         requestRepository.save(request);
-        return ResponseEntity.ok().build(); // Point içeren entity'yi dönme
+        return ResponseEntity.ok().build();
     }
 
     // Belirli bir requesti getir
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable int id) {
         return requestRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(r -> ResponseEntity.ok(toMap(r)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     // Kurban'a göre requestleri getir
     @GetMapping("/victim/{victimId}")
-    public List<AidRequest> getByVictim(@PathVariable int victimId) {
-        return requestRepository.findByVictimId(victimId);
+    public List<Map<String, Object>> getByVictim(@PathVariable int victimId) {
+        return requestRepository.findByVictimId(victimId).stream().map(this::toMap).toList();
     }
 
     // Aciliyet seviyesine göre getir
     @GetMapping("/urgent/{level}")
-    public List<AidRequest> getUrgent(@PathVariable int level) {
-        return requestRepository.findByUrgencyLevelGreaterThanEqual(level);
+    public List<Map<String, Object>> getUrgent(@PathVariable int level) {
+        return requestRepository.findByUrgencyLevelGreaterThanEqual(level).stream().map(this::toMap).toList();
     }
 
     // Status güncelle
@@ -72,7 +87,18 @@ public class RequestController {
             @RequestParam String status) {
         return requestRepository.findById(id).map(request -> {
             request.setStatus(status);
-            return ResponseEntity.ok(requestRepository.save(request));
+            requestRepository.save(request);
+            return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // İptal edilen requesti sil
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable int id) {
+        if (requestRepository.existsById(id)) {
+            requestRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }
