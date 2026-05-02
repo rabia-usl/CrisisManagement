@@ -73,4 +73,29 @@ interface ApiService {
 
     @GET("api/matches/request/{requestId}")
     suspend fun getMatchesByRequest(@Path("requestId") requestId: Int): Response<List<RequestResourceMatch>>
+
+    // NEARBY
+    @GET("api/nearby/requests")
+    suspend fun getNearbyRequests(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double
+    ): Response<List<Map<String, Any>>>
+
+    @GET("api/nearby/resources")
+    suspend fun getNearbyResources(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double
+    ): Response<List<Map<String, Any>>>
+
+    @GET("api/nearby/volunteers")
+    suspend fun getNearbyVolunteers(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double
+    ): Response<List<Map<String, Any>>>
+
+    @GET("api/nearby/critical-resources")
+    suspend fun getCriticalResources(): Response<List<Map<String, Any>>>
+
+    @GET("api/nearby/unfulfilled-requests")
+    suspend fun getUnfulfilledRequests(): Response<List<Map<String, Any>>>
 }

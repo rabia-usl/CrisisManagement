@@ -17,7 +17,8 @@ enum class OperatorNavigation {
     REQUESTS,
     RESOURCES,
     MATCHES,
-    PENDING
+    PENDING,
+    MAP
 }
 
 @Composable
@@ -30,6 +31,7 @@ fun OperatorMainScreen(onLogout: () -> Unit) {
             onResourcesClick = { currentScreen = OperatorNavigation.RESOURCES },
             onMatchesClick = { currentScreen = OperatorNavigation.MATCHES },
             onPendingClick = { currentScreen = OperatorNavigation.PENDING },
+            onMapClick = { currentScreen = OperatorNavigation.MAP },
             onLogout = onLogout
         )
         OperatorNavigation.REQUESTS -> RequestListScreen(
@@ -44,6 +46,9 @@ fun OperatorMainScreen(onLogout: () -> Unit) {
         OperatorNavigation.PENDING -> PendingRequestsScreen(
             onBack = { currentScreen = OperatorNavigation.DASHBOARD }
         )
+        OperatorNavigation.MAP -> OperatorMapScreen(
+            onBack = { currentScreen = OperatorNavigation.DASHBOARD }
+        )
     }
 }
 
@@ -53,6 +58,7 @@ fun OperatorDashboard(
     onResourcesClick: () -> Unit,
     onMatchesClick: () -> Unit,
     onPendingClick: () -> Unit,
+    onMapClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
@@ -122,6 +128,29 @@ fun OperatorDashboard(
                 modifier = Modifier.weight(1f),
                 onClick = onPendingClick
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clickable { onMapClick() },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🗺 Kriz Haritası",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }

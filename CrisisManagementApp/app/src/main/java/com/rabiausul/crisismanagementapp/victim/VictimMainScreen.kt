@@ -17,7 +17,8 @@ enum class VictimNavigation {
     CREATE_REQUEST,
     MY_REQUESTS,
     REQUEST_STATUS,
-    EMERGENCY
+    EMERGENCY,
+    MAP
 }
 
 @Composable
@@ -30,6 +31,7 @@ fun VictimMainScreen(onLogout: () -> Unit) {
             onMyRequestsClick = { currentScreen = VictimNavigation.MY_REQUESTS },
             onRequestStatusClick = { currentScreen = VictimNavigation.REQUEST_STATUS },
             onEmergencyClick = { currentScreen = VictimNavigation.EMERGENCY },
+            onMapClick = { currentScreen = VictimNavigation.MAP },
             onLogout = onLogout
         )
         VictimNavigation.CREATE_REQUEST -> CreateRequestScreen(
@@ -44,6 +46,9 @@ fun VictimMainScreen(onLogout: () -> Unit) {
         VictimNavigation.EMERGENCY -> EmergencyScreen(
             onBack = { currentScreen = VictimNavigation.DASHBOARD }
         )
+        VictimNavigation.MAP -> VictimMapScreen(
+            onBack = { currentScreen = VictimNavigation.DASHBOARD }
+        )
     }
 }
 
@@ -53,6 +58,7 @@ fun VictimDashboard(
     onMyRequestsClick: () -> Unit,
     onRequestStatusClick: () -> Unit,
     onEmergencyClick: () -> Unit,
+    onMapClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
@@ -118,6 +124,29 @@ fun VictimDashboard(
                 modifier = Modifier.weight(1f),
                 onClick = onEmergencyClick
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clickable { onMapClick() },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🗺 Yakınımdaki Kaynaklar",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }

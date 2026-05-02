@@ -17,7 +17,8 @@ enum class VolunteerNavigation {
     TASKS,
     ADD_RESOURCE,
     REQUESTS,
-    ASSIGNED_TASKS
+    ASSIGNED_TASKS,
+    MAP
 }
 
 @Composable
@@ -30,6 +31,7 @@ fun VolunteerMainScreen(onLogout: () -> Unit) {
             onAddResourceClick = { currentScreen = VolunteerNavigation.ADD_RESOURCE },
             onRequestsClick = { currentScreen = VolunteerNavigation.REQUESTS },
             onAssignedTasksClick = { currentScreen = VolunteerNavigation.ASSIGNED_TASKS },
+            onMapClick = { currentScreen = VolunteerNavigation.MAP },
             onLogout = onLogout
         )
         VolunteerNavigation.TASKS -> VolunteerTasksScreen(
@@ -44,6 +46,9 @@ fun VolunteerMainScreen(onLogout: () -> Unit) {
         VolunteerNavigation.ASSIGNED_TASKS -> AssignedTasksScreen(
             onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
         )
+        VolunteerNavigation.MAP -> VolunteerMapScreen(
+            onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
+        )
     }
 }
 
@@ -53,6 +58,7 @@ fun VolunteerDashboard(
     onAddResourceClick: () -> Unit,
     onRequestsClick: () -> Unit,
     onAssignedTasksClick: () -> Unit,
+    onMapClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
@@ -118,6 +124,29 @@ fun VolunteerDashboard(
                 modifier = Modifier.weight(1f),
                 onClick = onAssignedTasksClick
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clickable { onMapClick() },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🗺 Yakınımdaki Talepler",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }
