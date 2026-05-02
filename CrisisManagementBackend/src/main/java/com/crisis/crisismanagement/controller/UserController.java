@@ -5,6 +5,10 @@ import com.crisis.crisismanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Point;
 
 @RestController
 @RequestMapping("/api/users")
@@ -13,12 +17,19 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.findByIdentityNumber(user.getIdentityNumber()) != null) {
-            return ResponseEntity.status(400).body("Bu TC kimlik numarası zaten kayıtlı");
+        if (user.getLatitude() != null && user.getLongitude() != null) {
+            GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
+            Point point = factory.createPoint(
+                    new Coordinate(user.getLongitude(), user.getLatitude())
+            );
+            user.setUserLocation(point);
         }
-        return ResponseEntity.ok(userRepository.save(user));
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")

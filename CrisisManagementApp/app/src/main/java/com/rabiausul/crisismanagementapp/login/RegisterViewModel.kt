@@ -82,8 +82,8 @@ class RegisterViewModel : ViewModel() {
                     userRole = state.userrole,
                     identityNumber = state.identitynumber,
                     userPassword = state.userpassword,
-                    userLocation = locationString
-                )
+                    latitude = location?.latitude,
+                    longitude = location?.longitude                )
 
                 val response = RetrofitClient.api.register(user)
 

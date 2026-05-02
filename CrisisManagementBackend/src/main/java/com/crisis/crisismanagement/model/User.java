@@ -1,6 +1,7 @@
 package com.crisis.crisismanagement.model;
 
 import jakarta.persistence.*;
+import org.locationtech.jts.geom.Point;
 
 @Entity
 @Table(name = "users")
@@ -26,6 +27,15 @@ public class User {
     @Column(name = "identitynumber")
     private String identityNumber;
 
+    @Column(name = "userlocation", columnDefinition = "geometry(Point,4326)")
+    private Point userLocation;
+
+    @Transient
+    private Double latitude;
+
+    @Transient
+    private Double longitude;
+
     public Integer getUserId() { return userId; }
     public void setUserId(Integer userId) { this.userId = userId; }
 
@@ -43,4 +53,13 @@ public class User {
 
     public String getIdentityNumber() { return identityNumber; }
     public void setIdentityNumber(String identityNumber) { this.identityNumber = identityNumber; }
+
+    public Point getUserLocation() { return userLocation; }
+    public void setUserLocation(Point userLocation) { this.userLocation = userLocation; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }

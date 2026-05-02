@@ -9,5 +9,7 @@ data class User(
     @SerializedName("userRole") val userRole: String = "",
     @SerializedName("userPassword") val userPassword: String = "",
     @SerializedName("identityNumber") val identityNumber: String = "",
-    @SerializedName("userLocation") val userLocation: String? = ""
+    @SerializedName("latitude") val latitude: Double? = null,
+    @SerializedName("longitude") val longitude: Double? = null,
+
 )
