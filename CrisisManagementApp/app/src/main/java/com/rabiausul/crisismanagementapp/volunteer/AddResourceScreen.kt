@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.Resource
 import kotlinx.coroutines.launch
+import com.rabiausul.crisismanagementapp.SessionManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +29,7 @@ fun AddResourceScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val categories = listOf("Gıda", "Su", "İlaç", "Giysi", "Barınak", "Diğer")
+    val categories = listOf("Gıda", "Su", "İlaç", "Barınak")
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -136,6 +137,7 @@ fun AddResourceScreen(onBack: () -> Unit) {
                             scope.launch {
                                 try {
                                     val resource = Resource(
+                                        providerId = SessionManager.getUserId(),
                                         category = category,
                                         initialQuantity = quantity.toIntOrNull() ?: 0,
                                         currentQuantity = quantity.toIntOrNull() ?: 0

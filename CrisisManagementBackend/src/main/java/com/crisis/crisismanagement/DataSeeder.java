@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 @Component
@@ -19,10 +21,14 @@ public class DataSeeder implements CommandLineRunner {
         this.dataSource = dataSource;
     }
 
-    final double[][] CITIES = {{41.0082, 28.9784}, {39.9334, 32.8597}, {38.4192, 27.1287}, {37.0000, 35.3213}, {40.1885, 29.0610}, {39.7767, 30.5206}, {37.8746, 32.4932}, {36.8969, 30.7133}, {41.0015, 39.7178}};
-    final String[] CATEGORIES = {"Food", "Water", "Medicine", "Shelter", "Clothing", "Rescue", "Medical Aid", "Transportation", "Power Supply", "Communication"};
-    final String[] ROLES = {"Victim", "Volunteer", "Operator"};
-    final String[] STATUSES = {"Pending", "InProgress", "Completed", "Cancelled"};
+    final double[][] CITIES = {
+            {41.0082, 28.9784}, {39.9334, 32.8597}, {38.4192, 27.1287},
+            {37.0000, 35.3213}, {40.1885, 29.0610}, {39.7767, 30.5206},
+            {37.8746, 32.4932}, {36.8969, 30.7133}, {41.0015, 39.7178}
+    };
+    final String[] CATEGORIES = {"Food", "Water", "Medicine", "Shelter"};
+    final String[] ROLES = {"victim", "volunteer", "operator"};
+    final String[] STATUSES = {"PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"};
     final String[] FIRST_NAMES = {"Ali", "Ayşe", "Mehmet", "Fatma", "Mustafa", "Zeynep", "Ahmet", "Elif"};
     final String[] LAST_NAMES = {"Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Arslan", "Doğan", "Aydın"};
     final String[] DESCRIPTIONS = {"Urgent food needed", "Clean water supply required", "Medical assistance needed", "Temporary shelter requested"};
@@ -30,7 +36,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
-            if (getCount(conn, "Users") > 0) {
+            if (getCount(conn, "users") > 0) {
                 System.out.println(">> Veritabanı dolu, DataSeeder iptal edildi.");
                 return;
             }
@@ -40,16 +46,19 @@ public class DataSeeder implements CommandLineRunner {
             try {
                 System.out.println(">> Veriler ekleniyor...");
 
-                int userCount = 2000;
-                insertUsers(conn, userCount);
+                insertUsers(conn, 2000);
 
-                int maxUserId = getMaxId(conn, "Users", "UserID");
-                insertRequests(conn, 1500, maxUserId);
-                insertResources(conn, 1000, maxUserId);
+                int[] userIds = getIds(conn, "users", "userid");
+                int[] volunteerIds = getIdsByRole(conn, "volunteer");
 
-                int maxReqId = getMaxId(conn, "Request", "RequestID");
-                int maxResId = getMaxId(conn, "Resources", "ResourceID");
-                insertMatches(conn, 500, maxReqId, maxResId);
+                insertRequests(conn, 2000, userIds);
+                insertResources(conn, 300, userIds);
+
+                int[] reqIds = getIds(conn, "request", "requestid");
+                int[] resIds = getIds(conn, "resources", "resourceid");
+
+                insertMatches(conn, 200, reqIds, resIds);
+                insertAssignments(conn, 500, reqIds, volunteerIds);
 
                 conn.commit();
                 System.out.println(">> İşlem başarıyla tamamlandı.");
@@ -62,7 +71,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void insertUsers(Connection conn, int count) throws SQLException {
-        String sql = "INSERT INTO Users (UserName, PhoneNumber, UserRole, IdentityNumber, UserPassword, UserLocation) " +
+        String sql = "INSERT INTO users (username, phonenumber, userrole, identitynumber, userpassword, userlocation) " +
                 "VALUES (?, ?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326))";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < count; i++) {
@@ -81,15 +90,15 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void insertRequests(Connection conn, int count, int maxUserId) throws SQLException {
-        String sql = "INSERT INTO Request (VictimID, Category, UrgencyLevel, Status, Description, Times, VulnerableCount, RequestLocation) " +
+    private void insertRequests(Connection conn, int count, int[] userIds) throws SQLException {
+        String sql = "INSERT INTO request (victimid, category, urgencylevel, status, description, times, vulnerablecount, requestlocation) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326))";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < count; i++) {
                 double[] city = CITIES[rand.nextInt(CITIES.length)];
-                ps.setInt(1, rand.nextInt(maxUserId) + 1);
+                ps.setInt(1, userIds[rand.nextInt(userIds.length)]);
                 ps.setString(2, CATEGORIES[rand.nextInt(CATEGORIES.length)]);
-                ps.setInt(3, rand.nextInt(3) + 1); // ← 1-3 arası urgency level
+                ps.setInt(3, rand.nextInt(3) + 1);
                 ps.setString(4, STATUSES[rand.nextInt(STATUSES.length)]);
                 ps.setString(5, DESCRIPTIONS[rand.nextInt(DESCRIPTIONS.length)]);
                 ps.setTimestamp(6, randomTimestamp());
@@ -103,14 +112,14 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void insertResources(Connection conn, int count, int maxUserId) throws SQLException {
-        String sql = "INSERT INTO Resources (ProviderID, Category, InitialQuantity, CurrentQuantity, ResourceLocation) " +
+    private void insertResources(Connection conn, int count, int[] userIds) throws SQLException {
+        String sql = "INSERT INTO resources (providerid, category, initialquantity, currentquantity, resourcelocation) " +
                 "VALUES (?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326))";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < count; i++) {
                 double[] city = CITIES[rand.nextInt(CITIES.length)];
                 int init = rand.nextInt(100) + 10;
-                ps.setInt(1, rand.nextInt(maxUserId) + 1);
+                ps.setInt(1, userIds[rand.nextInt(userIds.length)]);
                 ps.setString(2, CATEGORIES[rand.nextInt(CATEGORIES.length)]);
                 ps.setInt(3, init);
                 ps.setInt(4, rand.nextInt(init));
@@ -123,12 +132,12 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void insertMatches(Connection conn, int count, int maxReqId, int maxResId) throws SQLException {
-        String sql = "INSERT INTO RequestResourceMatches (RequestID, ResourceID, MatchDate, AllocateQuantity) VALUES (?, ?, ?, ?)";
+    private void insertMatches(Connection conn, int count, int[] reqIds, int[] resIds) throws SQLException {
+        String sql = "INSERT INTO requestresourcematches (requestid, resourceid, matchdate, allocatequantity) VALUES (?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < count; i++) {
-                ps.setInt(1, rand.nextInt(maxReqId) + 1);
-                ps.setInt(2, rand.nextInt(maxResId) + 1);
+                ps.setInt(1, reqIds[rand.nextInt(reqIds.length)]);
+                ps.setInt(2, resIds[rand.nextInt(resIds.length)]);
                 ps.setTimestamp(3, randomTimestamp());
                 ps.setInt(4, rand.nextInt(50) + 1);
                 ps.addBatch();
@@ -138,20 +147,59 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
+    private void insertAssignments(Connection conn, int count, int[] reqIds, int[] volunteerIds) throws SQLException {
+        if (volunteerIds.length == 0) {
+            System.out.println("   Gönüllü bulunamadı, atama eklenmedi.");
+            return;
+        }
+        String sql = "INSERT INTO assignments (requestid, volunteerid, quantity, status) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < count; i++) {
+                ps.setInt(1, reqIds[rand.nextInt(reqIds.length)]);
+                ps.setInt(2, volunteerIds[rand.nextInt(volunteerIds.length)]);
+                ps.setInt(3, rand.nextInt(10) + 1);
+                ps.setString(4, STATUSES[rand.nextInt(STATUSES.length)]);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            System.out.println("   " + count + " atama eklendi.");
+        }
+    }
+
+    private int[] getIds(Connection conn, String table, String col) throws SQLException {
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT " + col + " FROM " + table)) {
+            List<Integer> ids = new ArrayList<>();
+            while (rs.next()) ids.add(rs.getInt(1));
+            return ids.stream().mapToInt(Integer::intValue).toArray();
+        }
+    }
+
+    private int[] getIdsByRole(Connection conn, String role) throws SQLException {
+        String sql = "SELECT userid FROM users WHERE userrole = '" + role + "'";
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            List<Integer> ids = new ArrayList<>();
+            while (rs.next()) ids.add(rs.getInt(1));
+            return ids.stream().mapToInt(Integer::intValue).toArray();
+        }
+    }
+
     private int getCount(Connection conn, String table) throws SQLException {
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + table)) {
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + table)) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
 
-    private int getMaxId(Connection conn, String table, String col) throws SQLException {
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT MAX(" + col + ") FROM " + table)) {
-            return rs.next() ? rs.getInt(1) : 0;
-        }
+    private String randomName() {
+        return FIRST_NAMES[rand.nextInt(FIRST_NAMES.length)] + " " + LAST_NAMES[rand.nextInt(LAST_NAMES.length)];
     }
 
-    private String randomName() { return FIRST_NAMES[rand.nextInt(FIRST_NAMES.length)] + " " + LAST_NAMES[rand.nextInt(LAST_NAMES.length)]; }
-    private String randomPhone() { return "05" + (rand.nextInt(900000000) + 100000000); }
+    private String randomPhone() {
+        return "05" + (rand.nextInt(900000000) + 100000000);
+    }
+
     private String randomTC() {
         StringBuilder tc = new StringBuilder();
         tc.append(rand.nextInt(9) + 1);
@@ -160,5 +208,8 @@ public class DataSeeder implements CommandLineRunner {
         }
         return tc.toString();
     }
-    private Timestamp randomTimestamp() { return new Timestamp(System.currentTimeMillis() - (long)(rand.nextDouble() * 1000000000L)); }
+
+    private Timestamp randomTimestamp() {
+        return new Timestamp(System.currentTimeMillis() - (long) (rand.nextDouble() * 1000000000L));
+    }
 }

@@ -5,5 +5,7 @@ data class Resource(
     val providerId: Int = 0,
     val category: String = "",
     val initialQuantity: Int = 0,
-    val currentQuantity: Int = 0
+    val currentQuantity: Int = 0,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

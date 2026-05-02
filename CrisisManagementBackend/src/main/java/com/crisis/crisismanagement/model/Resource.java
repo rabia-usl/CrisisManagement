@@ -1,6 +1,7 @@
 package com.crisis.crisismanagement.model;
 
 import jakarta.persistence.*;
+import org.locationtech.jts.geom.Point;
 
 @Entity
 @Table(name = "resources")
@@ -23,6 +24,15 @@ public class Resource {
     @Column(name = "currentquantity")
     private Integer currentQuantity;
 
+    @Column(name = "resourcelocation", columnDefinition = "geometry(Point,4326)")
+    private Point resourceLocation;
+
+    @Transient
+    private Double latitude;
+
+    @Transient
+    private Double longitude;
+
     public Integer getResourceId() { return resourceId; }
     public void setResourceId(Integer resourceId) { this.resourceId = resourceId; }
 
@@ -37,4 +47,13 @@ public class Resource {
 
     public Integer getCurrentQuantity() { return currentQuantity; }
     public void setCurrentQuantity(Integer currentQuantity) { this.currentQuantity = currentQuantity; }
+
+    public Point getResourceLocation() { return resourceLocation; }
+    public void setResourceLocation(Point resourceLocation) { this.resourceLocation = resourceLocation; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }

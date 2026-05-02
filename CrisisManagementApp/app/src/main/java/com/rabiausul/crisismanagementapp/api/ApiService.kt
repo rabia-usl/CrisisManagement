@@ -40,7 +40,7 @@ interface ApiService {
     suspend fun getAllResources(): Response<List<Resource>>
 
     @POST("api/resources")
-    suspend fun createResource(@Body resource: Resource): Response<Resource>
+    suspend fun createResource(@Body resource: Resource): Response<Unit>
 
     @GET("api/resources/provider/{providerId}")
     suspend fun getResourcesByProvider(@Path("providerId") providerId: Int): Response<List<Resource>>
