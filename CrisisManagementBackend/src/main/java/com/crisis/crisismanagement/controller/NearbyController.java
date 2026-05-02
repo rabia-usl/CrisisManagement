@@ -18,19 +18,20 @@ public class NearbyController {
             @RequestParam double lat,
             @RequestParam double lng) {
         String sql = """
-                SELECT r.requestid, r.category, r.urgencylevel,
-                       r.description, r.status, r.vulnerablecount,
-                       ST_Y(r.requestlocation::geometry) AS lat,
-                       ST_X(r.requestlocation::geometry) AS lng,
-                       ST_Distance(
-                           r.requestlocation::geography,
-                           ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
-                       ) AS distance_meters
-                FROM request r
-                WHERE r.requestlocation IS NOT NULL
-                ORDER BY distance_meters ASC
-                LIMIT 100
-                """;
+            SELECT r.requestid, r.category, r.urgencylevel,
+                   r.description, r.status, r.vulnerablecount,
+                   ST_Y(r.requestlocation::geometry) AS lat,
+                   ST_X(r.requestlocation::geometry) AS lng,
+                   ST_Distance(
+                       r.requestlocation::geography,
+                       ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+                   ) AS distance_meters
+            FROM request r
+            WHERE r.requestlocation IS NOT NULL
+            AND r.status = 'PENDING'
+            ORDER BY distance_meters ASC
+            LIMIT 100
+            """;
         return jdbcTemplate.queryForList(sql, lng, lat);
     }
 

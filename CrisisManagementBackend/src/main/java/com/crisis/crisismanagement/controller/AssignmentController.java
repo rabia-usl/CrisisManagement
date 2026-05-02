@@ -4,8 +4,10 @@ import com.crisis.crisismanagement.model.Assignment;
 import com.crisis.crisismanagement.repository.AssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/assignments")
@@ -15,7 +17,6 @@ public class AssignmentController {
     private AssignmentRepository assignmentRepository;
 
 
-
     @GetMapping
     public List<Assignment> getAll() {
         return assignmentRepository.findAll();
@@ -23,7 +24,8 @@ public class AssignmentController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Assignment assignment) {
-        assignment.setStatus("PENDING");
+        assignment.setAssignmentId(null);  // bunu ekle
+        assignment.setStatus("IN_PROGRESS");
         return ResponseEntity.ok(assignmentRepository.save(assignment));
     }
 
@@ -32,9 +34,20 @@ public class AssignmentController {
         return assignmentRepository.findByRequestId(requestId);
     }
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @GetMapping("/volunteer/{volunteerId}")
-    public List<Assignment> getByVolunteer(@PathVariable int volunteerId) {
-        return assignmentRepository.findByVolunteerId(volunteerId);
+    public List<Map<String, Object>> getByVolunteer(@PathVariable int volunteerId) {
+        String sql = """
+            SELECT a.assignmentid, a.requestid, a.volunteerid, a.quantity, a.status,
+                   r.category, r.description, r.urgencylevel, r.vulnerablecount, r.times
+            FROM assignments a
+            JOIN request r ON a.requestid = r.requestid
+            WHERE a.volunteerid = ?
+            ORDER BY a.assignmentid DESC
+            """;
+        return jdbcTemplate.queryForList(sql, volunteerId);
     }
 
     @GetMapping("/volunteer/{volunteerId}/status/{status}")

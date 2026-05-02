@@ -58,6 +58,14 @@ interface ApiService {
     @POST("api/assignments")
     suspend fun createAssignment(@Body assignment: Assignment): Response<Assignment>
 
+    @GET("api/assignments/volunteer/{volunteerId}")
+    suspend fun getAssignmentsByVolunteer(@Path("volunteerId") volunteerId: Int): Response<List<Map<String, Any>>>
+    @PUT("api/assignments/{id}/claim")
+    suspend fun claimAssignment(
+        @Path("id") id: Int,
+        @Query("volunteerId") volunteerId: Int
+    ): Response<Unit>
+
     @GET("api/assignments/request/{requestId}")
     suspend fun getAssignmentsByRequest(@Path("requestId") requestId: Int): Response<List<Assignment>>
 

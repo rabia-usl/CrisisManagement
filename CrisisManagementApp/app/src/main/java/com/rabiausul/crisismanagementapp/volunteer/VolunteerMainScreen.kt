@@ -16,8 +16,6 @@ enum class VolunteerNavigation {
     DASHBOARD,
     TASKS,
     ADD_RESOURCE,
-    REQUESTS,
-    ASSIGNED_TASKS,
     MAP
 }
 
@@ -29,8 +27,6 @@ fun VolunteerMainScreen(onLogout: () -> Unit) {
         VolunteerNavigation.DASHBOARD -> VolunteerDashboard(
             onTasksClick = { currentScreen = VolunteerNavigation.TASKS },
             onAddResourceClick = { currentScreen = VolunteerNavigation.ADD_RESOURCE },
-            onRequestsClick = { currentScreen = VolunteerNavigation.REQUESTS },
-            onAssignedTasksClick = { currentScreen = VolunteerNavigation.ASSIGNED_TASKS },
             onMapClick = { currentScreen = VolunteerNavigation.MAP },
             onLogout = onLogout
         )
@@ -38,12 +34,6 @@ fun VolunteerMainScreen(onLogout: () -> Unit) {
             onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
         )
         VolunteerNavigation.ADD_RESOURCE -> AddResourceScreen(
-            onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
-        )
-        VolunteerNavigation.REQUESTS -> VolunteerRequestsScreen(
-            onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
-        )
-        VolunteerNavigation.ASSIGNED_TASKS -> AssignedTasksScreen(
             onBack = { currentScreen = VolunteerNavigation.DASHBOARD }
         )
         VolunteerNavigation.MAP -> VolunteerMapScreen(
@@ -56,8 +46,6 @@ fun VolunteerMainScreen(onLogout: () -> Unit) {
 fun VolunteerDashboard(
     onTasksClick: () -> Unit,
     onAddResourceClick: () -> Unit,
-    onRequestsClick: () -> Unit,
-    onAssignedTasksClick: () -> Unit,
     onMapClick: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -103,26 +91,6 @@ fun VolunteerDashboard(
                 color = Color(0xFF43A047),
                 modifier = Modifier.weight(1f),
                 onClick = onAddResourceClick
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            VolunteerDashboardCard(
-                title = "Talepler",
-                color = Color(0xFFE53935),
-                modifier = Modifier.weight(1f),
-                onClick = onRequestsClick
-            )
-            VolunteerDashboardCard(
-                title = "Atanan Görevler",
-                color = Color(0xFF8E24AA),
-                modifier = Modifier.weight(1f),
-                onClick = onAssignedTasksClick
             )
         }
 

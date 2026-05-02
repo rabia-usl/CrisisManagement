@@ -14,72 +14,98 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rabiausul.crisismanagementapp.SessionManager
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
-import com.rabiausul.crisismanagementapp.model.Assignment
+import kotlinx.coroutines.launch
 
 @Composable
 fun VolunteerTasksScreen(onBack: () -> Unit) {
-    var tasks by remember { mutableStateOf<List<Assignment>>(emptyList()) }
+    var tasks by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        try {
-            val response = RetrofitClient.api.getAllAssignments()
-            if (response.isSuccessful) {
-                tasks = response.body() ?: emptyList()
-            } else {
-                errorMessage = "Görevler yüklenemedi"
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    fun loadTasks() {
+        scope.launch {
+            isLoading = true
+            errorMessage = ""
+            try {
+                val response = RetrofitClient.api.getAssignmentsByVolunteer(SessionManager.getUserId())
+                if (response.isSuccessful) {
+                    tasks = response.body() ?: emptyList()
+                } else {
+                    errorMessage = "Görevler yüklenemedi"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Bağlantı hatası: ${e.message}"
+            } finally {
+                isLoading = false
             }
-        } catch (e: Exception) {
-            errorMessage = "Bağlantı hatası: ${e.message}"
-        } finally {
-            isLoading = false
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Geri"
-                )
-            }
-            Text(
-                text = "Görevlerim",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+    LaunchedEffect(Unit) { loadTasks() }
 
-        when {
-            isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Geri"
+                    )
                 }
+                Text(text = "Görevlerim", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
-            errorMessage.isNotEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = errorMessage, color = Color.Red)
+
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            tasks.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "Henüz görev bulunmuyor")
+                errorMessage.isNotEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = errorMessage, color = Color.Red)
+                    }
                 }
-            }
-            else -> {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(tasks) { task ->
-                        TaskCard(task = task)
+                tasks.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Henüz göreviniz bulunmuyor")
+                    }
+                }
+                else -> {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(tasks) { task ->
+                            TaskCard(
+                                task = task,
+                                onStatusUpdate = { assignmentId, status ->
+                                    scope.launch {
+                                        try {
+                                            val response = RetrofitClient.api.updateAssignmentStatus(assignmentId, status)
+                                            if (response.isSuccessful) {
+                                                snackbarHostState.showSnackbar("Durum güncellendi")
+                                                loadTasks()
+                                            } else {
+                                                snackbarHostState.showSnackbar("Güncelleme başarısız")
+                                            }
+                                        } catch (e: Exception) {
+                                            snackbarHostState.showSnackbar("Bağlantı hatası: ${e.message}")
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -88,19 +114,57 @@ fun VolunteerTasksScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun TaskCard(task: Assignment) {
-    val statusColor = when (task.status) {
+fun TaskCard(
+    task: Map<String, Any>,
+    onStatusUpdate: (Int, String) -> Unit
+) {
+    val assignmentId = when (val v = task["assignmentid"]) {
+        is Double -> v.toInt()
+        is Number -> v.toInt()
+        else -> 0
+    }
+    val status = task["status"]?.toString() ?: ""
+    val category = task["category"]?.toString() ?: "-"
+    val description = task["description"]?.toString() ?: "-"
+    val urgencyLevel = when (val v = task["urgencylevel"]) {
+        is Double -> v.toInt()
+        is Number -> v.toInt()
+        else -> 1
+    }
+    val vulnerableCount = when (val v = task["vulnerablecount"]) {
+        is Double -> v.toInt()
+        is Number -> v.toInt()
+        else -> 0
+    }
+    val quantity = when (val v = task["quantity"]) {
+        is Double -> v.toInt()
+        is Number -> v.toInt()
+        else -> 0
+    }
+
+    val urgencyColor = when (urgencyLevel) {
+        3 -> Color(0xFFE53935)
+        2 -> Color(0xFFFB8C00)
+        else -> Color(0xFF43A047)
+    }
+    val urgencyText = when (urgencyLevel) {
+        3 -> "Yüksek"
+        2 -> "Orta"
+        else -> "Düşük"
+    }
+    val statusColor = when (status) {
         "PENDING" -> Color(0xFFFB8C00)
         "IN_PROGRESS" -> Color(0xFF1E88E5)
         "COMPLETED" -> Color(0xFF43A047)
+        "CANCELLED" -> Color(0xFFE53935)
         else -> Color.Gray
     }
-
-    val statusText = when (task.status) {
+    val statusText = when (status) {
         "PENDING" -> "Bekliyor"
         "IN_PROGRESS" -> "Devam Ediyor"
         "COMPLETED" -> "Tamamlandı"
-        else -> task.status
+        "CANCELLED" -> "İptal Edildi"
+        else -> status
     }
 
     Card(
@@ -109,16 +173,13 @@ fun TaskCard(task: Assignment) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Görev #${task.assignmentId}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Text(text = category, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = statusColor),
                     shape = RoundedCornerShape(8.dp)
@@ -131,39 +192,53 @@ fun TaskCard(task: Assignment) {
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Talep ID: ${task.requestId}",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-            Text(
-                text = "Miktar: ${task.quantity}",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = description, fontSize = 14.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Button(
-                    onClick = { /* TODO: Görevi üstlen */ },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1E88E5)
-                    )
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = urgencyColor.copy(alpha = 0.15f)),
+                    shape = RoundedCornerShape(6.dp)
                 ) {
-                    Text("Üstlen", color = Color.White)
+                    Text(
+                        text = "Aciliyet: $urgencyText",
+                        color = urgencyColor,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
-                Button(
-                    onClick = { /* TODO: Tamamlandı */ },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF43A047)
-                    )
-                ) {
-                    Text("Tamamlandı", color = Color.White)
+                Text(text = "Etkilenen: $vulnerableCount kişi", fontSize = 12.sp, color = Color.Gray)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = "Görev #$assignmentId  •  Miktar: $quantity", fontSize = 12.sp, color = Color.Gray)
+
+            when (status) {
+                "PENDING" -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { onStatusUpdate(assignmentId, "IN_PROGRESS") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+                    ) {
+                        Text("Göreve Başla", color = Color.White)
+                    }
+                }
+                "IN_PROGRESS" -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { onStatusUpdate(assignmentId, "COMPLETED") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF43A047))
+                    ) {
+                        Text("Tamamlandı", color = Color.White)
+                    }
                 }
             }
         }
