@@ -27,7 +27,9 @@ fun ResourceListScreen(onBack: () -> Unit) {
         try {
             val response = RetrofitClient.api.getAllResources()
             if (response.isSuccessful) {
-                resources = response.body() ?: emptyList()
+                resources = response.body()
+                    ?.sortedBy { it.currentQuantity }
+                    ?: emptyList()
             } else {
                 errorMessage = "Veriler yüklenemedi"
             }

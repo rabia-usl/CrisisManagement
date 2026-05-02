@@ -1,5 +1,10 @@
 package com.rabiausul.crisismanagementapp.operator
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Color as AndroidColor
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -14,12 +19,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.rabiausul.crisismanagementapp.SessionManager
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
 fun OperatorMapScreen(onBack: () -> Unit) {
@@ -27,14 +36,31 @@ fun OperatorMapScreen(onBack: () -> Unit) {
     var isLoading by remember { mutableStateOf(true) }
     var requests by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var resources by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
-    val defaultLat = 39.9334
-    val defaultLng = 32.8597
+    val userLat = SessionManager.getLat()
+    val userLng = SessionManager.getLng()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasLocationPermission = granted
+    }
 
     LaunchedEffect(Unit) {
+        if (!hasLocationPermission) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
         try {
-            val requestResponse = RetrofitClient.api.getNearbyRequests(defaultLat, defaultLng)
-            val resourceResponse = RetrofitClient.api.getNearbyResources(defaultLat, defaultLng)
+            val requestResponse = RetrofitClient.api.getNearbyRequests(userLat, userLng)
+            val resourceResponse = RetrofitClient.api.getNearbyResources(userLat, userLng)
             if (requestResponse.isSuccessful) requests = requestResponse.body() ?: emptyList()
             if (resourceResponse.isSuccessful) resources = resourceResponse.body() ?: emptyList()
         } catch (e: Exception) {
@@ -68,15 +94,12 @@ fun OperatorMapScreen(onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MapLegendItem(color = Color.Red, label = "🔴 Talepler")
-            MapLegendItem(color = Color.Green, label = "🟢 Kaynaklar")
+            MapLegendItem(color = Color.Red, label = "Talepler")
+            MapLegendItem(color = Color.Green, label = "Kaynaklar")
         }
 
         if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
@@ -86,9 +109,18 @@ fun OperatorMapScreen(onBack: () -> Unit) {
                     MapView(ctx).apply {
                         setTileSource(TileSourceFactory.MAPNIK)
                         setMultiTouchControls(true)
-                        controller.setZoom(6.0)
-                        controller.setCenter(GeoPoint(defaultLat, defaultLng))
+                        controller.setZoom(13.0)
+                        controller.setCenter(GeoPoint(userLat, userLng))
 
+                        if (hasLocationPermission) {
+                            val locationOverlay = MyLocationNewOverlay(
+                                GpsMyLocationProvider(ctx), this
+                            )
+                            locationOverlay.enableMyLocation()
+                            overlays.add(locationOverlay)
+                        }
+
+                        val redMarker = MarkerUtils.createColoredMarker(ctx, AndroidColor.RED)
                         requests.forEach { request ->
                             try {
                                 val lat = when (val v = request["lat"]) {
@@ -103,15 +135,17 @@ fun OperatorMapScreen(onBack: () -> Unit) {
                                 }
                                 val marker = Marker(this)
                                 marker.position = GeoPoint(lat, lng)
-                                marker.title = "🔴 ${request["category"]?.toString() ?: "Talep"}"
+                                marker.icon = redMarker
+                                marker.title = request["category"]?.toString() ?: "Talep"
                                 marker.snippet = "Aciliyet: ${request["urgencylevel"]} | Durum: ${request["status"]}"
-                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                                 overlays.add(marker)
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
                         }
 
+                        val greenMarker = MarkerUtils.createColoredMarker(ctx, AndroidColor.GREEN)
                         resources.forEach { resource ->
                             try {
                                 val lat = when (val v = resource["lat"]) {
@@ -126,9 +160,10 @@ fun OperatorMapScreen(onBack: () -> Unit) {
                                 }
                                 val marker = Marker(this)
                                 marker.position = GeoPoint(lat, lng)
-                                marker.title = "🟢 ${resource["category"]?.toString() ?: "Kaynak"}"
+                                marker.icon = greenMarker
+                                marker.title = resource["category"]?.toString() ?: "Kaynak"
                                 marker.snippet = "Miktar: ${resource["currentquantity"]} | Sağlayıcı: ${resource["provider_name"]}"
-                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                                 overlays.add(marker)
                             } catch (e: Exception) {
                                 e.printStackTrace()

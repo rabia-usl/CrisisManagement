@@ -16,7 +16,6 @@ enum class OperatorNavigation {
     DASHBOARD,
     REQUESTS,
     RESOURCES,
-    MATCHES,
     PENDING,
     MAP
 }
@@ -29,7 +28,6 @@ fun OperatorMainScreen(onLogout: () -> Unit) {
         OperatorNavigation.DASHBOARD -> OperatorDashboard(
             onRequestsClick = { currentScreen = OperatorNavigation.REQUESTS },
             onResourcesClick = { currentScreen = OperatorNavigation.RESOURCES },
-            onMatchesClick = { currentScreen = OperatorNavigation.MATCHES },
             onPendingClick = { currentScreen = OperatorNavigation.PENDING },
             onMapClick = { currentScreen = OperatorNavigation.MAP },
             onLogout = onLogout
@@ -38,9 +36,6 @@ fun OperatorMainScreen(onLogout: () -> Unit) {
             onBack = { currentScreen = OperatorNavigation.DASHBOARD }
         )
         OperatorNavigation.RESOURCES -> ResourceListScreen(
-            onBack = { currentScreen = OperatorNavigation.DASHBOARD }
-        )
-        OperatorNavigation.MATCHES -> MatchScreen(
             onBack = { currentScreen = OperatorNavigation.DASHBOARD }
         )
         OperatorNavigation.PENDING -> PendingRequestsScreen(
@@ -56,7 +51,6 @@ fun OperatorMainScreen(onLogout: () -> Unit) {
 fun OperatorDashboard(
     onRequestsClick: () -> Unit,
     onResourcesClick: () -> Unit,
-    onMatchesClick: () -> Unit,
     onPendingClick: () -> Unit,
     onMapClick: () -> Unit,
     onLogout: () -> Unit
@@ -94,14 +88,12 @@ fun OperatorDashboard(
         ) {
             OperatorDashboardCard(
                 title = "Yardım Talepleri",
-                count = "0",
                 color = Color(0xFFE53935),
                 modifier = Modifier.weight(1f),
                 onClick = onRequestsClick
             )
             OperatorDashboardCard(
                 title = "Kaynaklar",
-                count = "0",
                 color = Color(0xFF1E88E5),
                 modifier = Modifier.weight(1f),
                 onClick = onResourcesClick
@@ -115,18 +107,16 @@ fun OperatorDashboard(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OperatorDashboardCard(
-                title = "Eşleştirmeler",
-                count = "0",
-                color = Color(0xFF43A047),
-                modifier = Modifier.weight(1f),
-                onClick = onMatchesClick
-            )
-            OperatorDashboardCard(
-                title = "Bekleyenler",
-                count = "0",
-                color = Color(0xFFFB8C00),
+                title = "Gönüllü Eşleştir",
+                color = Color(0xFF8E24AA),
                 modifier = Modifier.weight(1f),
                 onClick = onPendingClick
+            )
+            OperatorDashboardCard(
+                title = "Kritik Stoklar",
+                color = Color(0xFFFB8C00),
+                modifier = Modifier.weight(1f),
+                onClick = onResourcesClick
             )
         }
 
@@ -158,7 +148,6 @@ fun OperatorDashboard(
 @Composable
 fun OperatorDashboardCard(
     title: String,
-    count: String,
     color: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
@@ -170,22 +159,14 @@ fun OperatorDashboardCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = color)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = count,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
         }
