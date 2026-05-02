@@ -7,6 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Point;
+
 
 @RestController
 @RequestMapping("/api/requests")
@@ -24,9 +29,20 @@ public class RequestController {
     // Yeni request oluştur
     @PostMapping
     public ResponseEntity<?> create(@RequestBody AidRequest request) {
+        request.setRequestId(null);
         request.setStatus("PENDING");
         request.setTimes(LocalDateTime.now());
-        return ResponseEntity.ok(requestRepository.save(request));
+
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
+            Point point = factory.createPoint(
+                    new Coordinate(request.getLongitude(), request.getLatitude())
+            );
+            request.setRequestLocation(point);
+        }
+
+        requestRepository.save(request);
+        return ResponseEntity.ok().build(); // Point içeren entity'yi dönme
     }
 
     // Belirli bir requesti getir

@@ -19,7 +19,6 @@ public class DataSeeder implements CommandLineRunner {
         this.dataSource = dataSource;
     }
 
-    // Sabit veriler (Aynı kalıyor)
     final double[][] CITIES = {{41.0082, 28.9784}, {39.9334, 32.8597}, {38.4192, 27.1287}, {37.0000, 35.3213}, {40.1885, 29.0610}, {39.7767, 30.5206}, {37.8746, 32.4932}, {36.8969, 30.7133}, {41.0015, 39.7178}};
     final String[] CATEGORIES = {"Food", "Water", "Medicine", "Shelter", "Clothing", "Rescue", "Medical Aid", "Transportation", "Power Supply", "Communication"};
     final String[] ROLES = {"Victim", "Volunteer", "Operator"};
@@ -31,32 +30,23 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
-            // Veritabanı temiz mi kontrol et
             if (getCount(conn, "Users") > 0) {
                 System.out.println(">> Veritabanı dolu, DataSeeder iptal edildi.");
                 return;
             }
 
-            conn.setAutoCommit(false); // Transaction başlat
+            conn.setAutoCommit(false);
 
             try {
                 System.out.println(">> Veriler ekleniyor...");
 
-                // 1. Önce Kullanıcıları ekle ve toplam sayıyı al
                 int userCount = 2000;
                 insertUsers(conn, userCount);
 
-                // NOT: Eğer ID'ler 1'den başlamıyorsa (önceden veri silindiyse),
-                // burada veritabanından güncel max ID'yi çekmek en sağlıklısıdır.
                 int maxUserId = getMaxId(conn, "Users", "UserID");
-
-                // 2. Talepleri ekle (Kullanıcı ID'lerine bağımlı)
                 insertRequests(conn, 1500, maxUserId);
-
-                // 3. Kaynakları ekle (Kullanıcı ID'lerine bağımlı)
                 insertResources(conn, 1000, maxUserId);
 
-                // 4. Eşleşmeleri ekle (Request ve Resource ID'lerine bağımlı)
                 int maxReqId = getMaxId(conn, "Request", "RequestID");
                 int maxResId = getMaxId(conn, "Resources", "ResourceID");
                 insertMatches(conn, 500, maxReqId, maxResId);
@@ -65,7 +55,7 @@ public class DataSeeder implements CommandLineRunner {
                 System.out.println(">> İşlem başarıyla tamamlandı.");
             } catch (Exception e) {
                 conn.rollback();
-                System.err.println(">> HATA OLUŞTU, Değişiklikler geri alındı: " + e.getMessage());
+                System.err.println(">> HATA OLUŞTU: " + e.getMessage());
                 throw e;
             }
         }
@@ -82,8 +72,8 @@ public class DataSeeder implements CommandLineRunner {
                 ps.setString(3, ROLES[rand.nextInt(ROLES.length)]);
                 ps.setString(4, randomTC());
                 ps.setString(5, "pass123");
-                ps.setDouble(6, city[1] + rand.nextGaussian() * 0.05); // lon
-                ps.setDouble(7, city[0] + rand.nextGaussian() * 0.05); // lat
+                ps.setDouble(6, city[1] + rand.nextGaussian() * 0.05);
+                ps.setDouble(7, city[0] + rand.nextGaussian() * 0.05);
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -97,10 +87,9 @@ public class DataSeeder implements CommandLineRunner {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < count; i++) {
                 double[] city = CITIES[rand.nextInt(CITIES.length)];
-                // Rastgele bir UserID seç ama veritabanındaki sınırlarda olsun
                 ps.setInt(1, rand.nextInt(maxUserId) + 1);
                 ps.setString(2, CATEGORIES[rand.nextInt(CATEGORIES.length)]);
-                ps.setInt(3, rand.nextInt(5) + 1);
+                ps.setInt(3, rand.nextInt(3) + 1); // ← 1-3 arası urgency level
                 ps.setString(4, STATUSES[rand.nextInt(STATUSES.length)]);
                 ps.setString(5, DESCRIPTIONS[rand.nextInt(DESCRIPTIONS.length)]);
                 ps.setTimestamp(6, randomTimestamp());
@@ -149,7 +138,6 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    // Yardımcı Metotlar
     private int getCount(Connection conn, String table) throws SQLException {
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + table)) {
             return rs.next() ? rs.getInt(1) : 0;
@@ -163,14 +151,14 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private String randomName() { return FIRST_NAMES[rand.nextInt(FIRST_NAMES.length)] + " " + LAST_NAMES[rand.nextInt(LAST_NAMES.length)]; }
-    private String randomPhone() { return "05" + (rand.nextInt(900000000) + 100000000);}
+    private String randomPhone() { return "05" + (rand.nextInt(900000000) + 100000000); }
     private String randomTC() {
-        // 1 ile 9 arası ilk hane + 10 tane rastgele rakam = 11 hane
         StringBuilder tc = new StringBuilder();
         tc.append(rand.nextInt(9) + 1);
         for (int i = 0; i < 10; i++) {
             tc.append(rand.nextInt(10));
         }
         return tc.toString();
-    }    private Timestamp randomTimestamp() { return new Timestamp(System.currentTimeMillis() - (long)(rand.nextDouble() * 1000000000L)); }
+    }
+    private Timestamp randomTimestamp() { return new Timestamp(System.currentTimeMillis() - (long)(rand.nextDouble() * 1000000000L)); }
 }

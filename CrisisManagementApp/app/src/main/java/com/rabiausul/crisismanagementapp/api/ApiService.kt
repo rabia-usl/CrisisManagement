@@ -18,7 +18,7 @@ interface ApiService {
     suspend fun getAllRequests(): Response<List<AidRequest>>
 
     @POST("api/requests")
-    suspend fun createRequest(@Body request: AidRequest): Response<AidRequest>
+    suspend fun createRequest(@Body request: AidRequest): Response<Unit>
 
     @GET("api/requests/victim/{victimId}")
     suspend fun getRequestsByVictim(@Path("victimId") victimId: Int): Response<List<AidRequest>>

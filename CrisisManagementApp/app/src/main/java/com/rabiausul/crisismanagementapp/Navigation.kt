@@ -5,12 +5,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.rabiausul.crisismanagementapp.login.LoginScreen
+import com.rabiausul.crisismanagementapp.ui.RegisterScreen
 import com.rabiausul.crisismanagementapp.operator.OperatorMainScreen
 import com.rabiausul.crisismanagementapp.volunteer.VolunteerMainScreen
 import com.rabiausul.crisismanagementapp.victim.VictimMainScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
+    object Register : Screen("register")
     object Operator : Screen("operator")
     object Victim : Screen("victim")
     object Volunteer : Screen("volunteer")
@@ -33,6 +35,19 @@ fun AppNavigation() {
                         "VOLUNTEER" -> navController.navigate(Screen.Volunteer.route)
                         "VICTIM" -> navController.navigate(Screen.Victim.route)
                         else -> navController.navigate(Screen.Victim.route)
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
             )

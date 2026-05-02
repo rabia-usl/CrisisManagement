@@ -7,5 +7,7 @@ data class AidRequest(
     val urgencyLevel: Int = 1,
     val status: String = "",
     val description: String = "",
-    val vulnerableCount: Int = 0
+    val vulnerableCount: Int = 0,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

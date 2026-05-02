@@ -1,19 +1,22 @@
-package com.rabiausul.crisismanagementapp.login
+package com.rabiausul.crisismanagementapp.viewmodel
 
+import android.annotation.SuppressLint
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.User
-import com.rabiausul.crisismanagementapp.model.UserRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
+import kotlinx.coroutines.tasks.await
 
 data class RegisterUiState(
     val username: String = "",
     val phonenumber: String = "",
-    val userrole: UserRole? = null,
+    val userrole: String = "victim",
     val identitynumber: String = "",
     val userpassword: String = "",
     val isLoading: Boolean = false,
@@ -34,8 +37,7 @@ class RegisterViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(phonenumber = value)
     }
 
-    fun onUserroleChange(value: UserRole) {
-        Log.d("RegisterViewModel", "Role changed to: ${value.name}")
+    fun onUserroleChange(value: String) {
         _uiState.value = _uiState.value.copy(userrole = value)
     }
 
@@ -47,19 +49,13 @@ class RegisterViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(userpassword = value)
     }
 
-    fun register() {
+    @SuppressLint("MissingPermission")
+    fun register(context: Context) {
         val state = _uiState.value
-        Log.d("RegisterViewModel", "Attempting register with: $state")
 
         if (state.username.isBlank() || state.phonenumber.isBlank() ||
-            state.identitynumber.isBlank() || state.userpassword.isBlank() ||
-            state.userrole == null) {
-            _uiState.value = state.copy(errorMessage = "Lütfen tüm alanları (rol dahil) doldurun.")
-            return
-        }
-
-        if (state.identitynumber.length != 11) {
-            _uiState.value = state.copy(errorMessage = "TC Kimlik No 11 haneli olmalıdır.")
+            state.identitynumber.isBlank() || state.userpassword.isBlank()) {
+            _uiState.value = state.copy(errorMessage = "Lütfen tüm alanları doldurun.")
             return
         }
 
@@ -67,34 +63,43 @@ class RegisterViewModel : ViewModel() {
             _uiState.value = state.copy(isLoading = true, errorMessage = "")
 
             try {
-                // Sunucuya gönderilecek veriyi oluşturuyoruz.
-                val userRequest = User(
+                // GPS'ten konumu al
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                val location = fusedLocationClient
+                    .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                    .await()
+
+                // Konum "POINT(longitude latitude)" formatında gönderilir (PostGIS standardı)
+                val locationString = if (location != null) {
+                    "POINT(${location.longitude} ${location.latitude})"
+                } else {
+                    null
+                }
+
+                val user = User(
                     userName = state.username,
                     phoneNumber = state.phonenumber,
-                    userRole = state.userrole.name, // Enum ismini (İngilizce) gönderiyoruz
+                    userRole = state.userrole,
                     identityNumber = state.identitynumber,
                     userPassword = state.userpassword,
-                    userLocation = null
+                    userLocation = locationString
                 )
 
-                val response = RetrofitClient.api.register(userRequest)
+                val response = RetrofitClient.api.register(user)
 
                 if (response.isSuccessful) {
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 } else {
-                    val errorBody = response.errorBody()?.string() ?: "Hata detayı alınamadı."
-                    Log.e("RegisterError", "Error Code: ${response.code()}, Body: $errorBody")
-                    
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Sunucu Hatası (${response.code()}): $errorBody"
+                        errorMessage = "Kayıt başarısız: ${response.code()}"
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Bağlantı Hatası: ${e.localizedMessage}"
+                    errorMessage = "Bağlantı hatası: ${e.message}"
                 )
             }
         }

@@ -1,5 +1,8 @@
-package com.rabiausul.crisismanagementapp.login
+package com.rabiausul.crisismanagementapp.ui
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -9,75 +12,46 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.rabiausul.crisismanagementapp.ui.theme.AccentRed
-import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
-import com.rabiausul.crisismanagementapp.login.RegisterViewModel
-import com.rabiausul.crisismanagementapp.login.RegisterUiState
-import com.rabiausul.crisismanagementapp.model.UserRole
+import com.rabiausul.crisismanagementapp.viewmodel.RegisterViewModel
 
-// Removed local AccentRed as it is now in ui.theme
+val AccentRed = Color(0xFFCC2B2B)
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // Konum izni için launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (granted) {
+            viewModel.register(context)
+        } else {
+            // İzin verilmezse konumsuz devam et (isteğe bağlı)
+            viewModel.register(context)
+        }
+    }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) onRegisterSuccess()
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Black
-    ) { padding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            color = Color.Black,
-            contentColor = Color.White
-        ) {
-            RegisterScreenContent(
-                uiState = uiState,
-                onUsernameChange = { viewModel.onUsernameChange(it) },
-                onPhonenumberChange = { viewModel.onPhonenumberChange(it) },
-                onIdentitynumberChange = { if (it.length <= 11) viewModel.onIdentitynumberChange(it) },
-                onUserpasswordChange = { viewModel.onUserpasswordChange(it) },
-                onUserroleChange = { viewModel.onUserroleChange(it) },
-                onRegisterClick = { viewModel.register() },
-                onNavigateToLogin = onNavigateToLogin
-            )
-        }
-    }
-}
-
-@Composable
-fun RegisterScreenContent(
-    uiState: RegisterUiState,
-    onUsernameChange: (String) -> Unit,
-    onPhonenumberChange: (String) -> Unit,
-    onIdentitynumberChange: (String) -> Unit,
-    onUserpasswordChange: (String) -> Unit,
-    onUserroleChange: (UserRole) -> Unit,
-    onRegisterClick: () -> Unit,
-    onNavigateToLogin: () -> Unit
-) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,40 +67,40 @@ fun RegisterScreenContent(
         Text(
             text = "Afet Koordinasyon Sistemi",
             fontSize = 14.sp,
-            color = Color.LightGray,
+            color = Color.Gray,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
         FormField(
             label = "Kullanıcı Adı",
             value = uiState.username,
-            onValueChange = onUsernameChange
+            onValueChange = { viewModel.onUsernameChange(it) }
         )
 
         FormField(
             label = "Telefon Numarası",
             value = uiState.phonenumber,
-            onValueChange = onPhonenumberChange,
+            onValueChange = { viewModel.onPhonenumberChange(it) },
             keyboardType = KeyboardType.Phone
         )
 
         FormField(
             label = "TC Kimlik No",
             value = uiState.identitynumber,
-            onValueChange = onIdentitynumberChange,
+            onValueChange = { viewModel.onIdentitynumberChange(it) },
             keyboardType = KeyboardType.Number
         )
 
         FormField(
             label = "Şifre",
             value = uiState.userpassword,
-            onValueChange = onUserpasswordChange,
+            onValueChange = { viewModel.onUserpasswordChange(it) },
             isPassword = true
         )
 
         RoleSelection(
             selectedRole = uiState.userrole,
-            onRoleSelected = onUserroleChange
+            onRoleSelected = { viewModel.onUserroleChange(it) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -141,7 +115,15 @@ fun RegisterScreenContent(
         }
 
         Button(
-            onClick = onRegisterClick,
+            onClick = {
+                // Önce konum iznini iste, sonra kayıt yap
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            },
             enabled = !uiState.isLoading,
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,26 +133,8 @@ fun RegisterScreenContent(
             if (uiState.isLoading) {
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
             } else {
-                Text("Kayıt Ol", fontSize = 16.sp, color = Color.White)
+                Text("Kayıt Ol", fontSize = 16.sp)
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TextButton(
-            onClick = onNavigateToLogin,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text(
-                text = buildAnnotatedString {
-                    append("Hesabın var mı? ")
-                    withStyle(style = SpanStyle(color = AccentRed, fontWeight = FontWeight.Bold)) {
-                        append("Giriş Yap")
-                    }
-                },
-                color = Color.LightGray,
-                fontSize = 14.sp
-            )
         }
     }
 }
@@ -194,36 +158,31 @@ fun FormField(
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
             focusedBorderColor = AccentRed,
-            unfocusedBorderColor = Color.Gray,
-            focusedLabelColor = AccentRed,
-            unfocusedLabelColor = Color.Gray,
-            cursorColor = AccentRed
+            focusedLabelColor = AccentRed
         )
     )
 }
 
 @Composable
 fun RoleSelection(
-    selectedRole: UserRole?,
-    onRoleSelected: (UserRole) -> Unit
+    selectedRole: String,
+    onRoleSelected: (String) -> Unit
 ) {
     val roles = listOf(
-        UserRole.VICTIM to "Mağdur",
-        UserRole.VOLUNTEER to "Gönüllü",
-        UserRole.OPERATOR to "Operatör"
+        "victim" to "Mağdur",
+        "volunteer" to "Gönüllü",
+        "operator" to "Operatör"
     )
 
     Text(
         text = "Rol",
         fontSize = 14.sp,
-        color = Color.LightGray,
+        color = Color.Gray,
         modifier = Modifier.padding(bottom = 8.dp)
     )
 
-    roles.forEach { (roleEnum, label) ->
+    roles.forEach { (value, label) ->
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -231,48 +190,17 @@ fun RoleSelection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RadioButton(
-                selected = selectedRole == roleEnum,
-                onClick = { onRoleSelected(roleEnum) },
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = AccentRed,
-                    unselectedColor = Color.White
-                )
+                selected = selectedRole == value,
+                onClick = { onRoleSelected(value) },
+                colors = RadioButtonDefaults.colors(selectedColor = AccentRed)
             )
             Text(
                 text = label,
                 fontSize = 14.sp,
-                color = Color.White,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    CrisisManagementAppTheme {
-        Scaffold(containerColor = Color.Black) { padding ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                color = Color.Black,
-                contentColor = Color.White
-            ) {
-                RegisterScreenContent(
-                    uiState = RegisterUiState(),
-                    onUsernameChange = {},
-                    onPhonenumberChange = {},
-                    onIdentitynumberChange = {},
-                    onUserpasswordChange = {},
-                    onUserroleChange = {},
-                    onRegisterClick = {},
-                    onNavigateToLogin = {}
-                )
-            }
-        }
-    }
 }
