@@ -16,7 +16,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.rabiausul.crisismanagementapp.model.User
-import com.rabiausul.crisismanagementapp.model.UserRole
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.ui.theme.AccentRed
 import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
@@ -29,7 +28,6 @@ fun LoginScreen(
 ) {
     var tcNo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf(UserRole.VICTIM) }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -51,8 +49,6 @@ fun LoginScreen(
                 onTcNoChange = { if (it.length <= 11) tcNo = it },
                 password = password,
                 onPasswordChange = { password = it },
-                selectedRole = selectedRole,
-                onRoleSelected = { selectedRole = it },
                 isLoading = isLoading,
                 onLoginClick = {
                     if (tcNo.isEmpty() || password.isEmpty()) {
@@ -65,8 +61,7 @@ fun LoginScreen(
                             try {
                                 val userRequest = User(
                                     identityNumber = tcNo,
-                                    userPassword = password,
-                                    userRole = selectedRole.name // English value (e.g. "VICTIM")
+                                    userPassword = password
                                 )
                                 val response = RetrofitClient.api.login(userRequest)
                                 if (response.isSuccessful && response.body() != null) {
@@ -94,8 +89,6 @@ fun LoginScreenContent(
     onTcNoChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
-    selectedRole: UserRole,
-    onRoleSelected: (UserRole) -> Unit,
     isLoading: Boolean,
     onLoginClick: () -> Unit,
     onNavigateToRegister: () -> Unit
@@ -154,34 +147,7 @@ fun LoginScreenContent(
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Rol Seçin:", fontSize = 14.sp, color = Color.LightGray)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            UserRole.entries.forEach { role ->
-                val label = when(role) {
-                    UserRole.VICTIM -> "Mağdur"
-                    UserRole.VOLUNTEER -> "Gönüllü"
-                    UserRole.OPERATOR -> "Operatör"
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = selectedRole == role,
-                        onClick = { onRoleSelected(role) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = AccentRed,
-                            unselectedColor = Color.White
-                        )
-                    )
-                    Text(label, color = Color.White, fontSize = 14.sp)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onLoginClick,
@@ -234,8 +200,6 @@ fun LoginScreenPreview() {
                     onTcNoChange = {},
                     password = "",
                     onPasswordChange = {},
-                    selectedRole = UserRole.VICTIM,
-                    onRoleSelected = {},
                     isLoading = false,
                     onLoginClick = {},
                     onNavigateToRegister = {}

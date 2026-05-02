@@ -12,24 +12,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.AidRequest
 import com.rabiausul.crisismanagementapp.model.RequestResourceMatch
 import com.rabiausul.crisismanagementapp.model.Resource
+import com.rabiausul.crisismanagementapp.ui.theme.CrisisManagementAppTheme
 
 @Composable
 fun MatchScreen(onBack: () -> Unit) {
     var requests by remember { mutableStateOf<List<AidRequest>>(emptyList()) }
     var resources by remember { mutableStateOf<List<Resource>>(emptyList()) }
     var matches by remember { mutableStateOf<List<RequestResourceMatch>>(emptyList()) }
-    var selectedRequest by remember { mutableStateOf<AidRequest?>(null) }
-    var selectedResource by remember { mutableStateOf<Resource?>(null) }
-    var quantity by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
-    var successMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         try {
@@ -46,6 +44,30 @@ fun MatchScreen(onBack: () -> Unit) {
             isLoading = false
         }
     }
+
+    MatchScreenContent(
+        requests = requests,
+        resources = resources,
+        matches = matches,
+        isLoading = isLoading,
+        errorMessage = errorMessage,
+        onBack = onBack
+    )
+}
+
+@Composable
+fun MatchScreenContent(
+    requests: List<AidRequest>,
+    resources: List<Resource>,
+    matches: List<RequestResourceMatch>,
+    isLoading: Boolean,
+    errorMessage: String,
+    onBack: () -> Unit
+) {
+    var selectedRequest by remember { mutableStateOf<AidRequest?>(null) }
+    var selectedResource by remember { mutableStateOf<Resource?>(null) }
+    var quantity by remember { mutableStateOf("") }
+    var successMessage by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -179,5 +201,32 @@ fun MatchScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MatchScreenPreview() {
+    val sampleRequests = listOf(
+        AidRequest(requestId = 1, category = "Gıda", urgencyLevel = 5),
+        AidRequest(requestId = 2, category = "Barınma", urgencyLevel = 4)
+    )
+    val sampleResources = listOf(
+        Resource(resourceId = 1, category = "Gıda", currentQuantity = 100),
+        Resource(resourceId = 2, category = "Barınma", currentQuantity = 50)
+    )
+    val sampleMatches = listOf(
+        RequestResourceMatch(requestId = 1, resourceId = 1, allocateQuantity = 10, matchDate = "2023-10-27")
+    )
+
+    CrisisManagementAppTheme {
+        MatchScreenContent(
+            requests = sampleRequests,
+            resources = sampleResources,
+            matches = sampleMatches,
+            isLoading = false,
+            errorMessage = "",
+            onBack = {}
+        )
     }
 }
