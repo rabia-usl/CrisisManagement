@@ -18,8 +18,6 @@ enum class VictimNavigation {
     DASHBOARD,
     CREATE_REQUEST,
     MY_REQUESTS,
-    REQUEST_STATUS,
-    EMERGENCY,
     MAP
 }
 
@@ -31,8 +29,6 @@ fun VictimMainScreen(onLogout: () -> Unit) {
         VictimNavigation.DASHBOARD -> VictimDashboard(
             onCreateRequestClick = { currentScreen = VictimNavigation.CREATE_REQUEST },
             onMyRequestsClick = { currentScreen = VictimNavigation.MY_REQUESTS },
-            onRequestStatusClick = { currentScreen = VictimNavigation.REQUEST_STATUS },
-            onEmergencyClick = { currentScreen = VictimNavigation.EMERGENCY },
             onMapClick = { currentScreen = VictimNavigation.MAP },
             onLogout = onLogout
         )
@@ -40,12 +36,6 @@ fun VictimMainScreen(onLogout: () -> Unit) {
             onBack = { currentScreen = VictimNavigation.DASHBOARD }
         )
         VictimNavigation.MY_REQUESTS -> MyRequestsScreen(
-            onBack = { currentScreen = VictimNavigation.DASHBOARD }
-        )
-        VictimNavigation.REQUEST_STATUS -> RequestStatusScreen(
-            onBack = { currentScreen = VictimNavigation.DASHBOARD }
-        )
-        VictimNavigation.EMERGENCY -> EmergencyScreen(
             onBack = { currentScreen = VictimNavigation.DASHBOARD }
         )
         VictimNavigation.MAP -> VictimMapScreen(
@@ -58,8 +48,6 @@ fun VictimMainScreen(onLogout: () -> Unit) {
 fun VictimDashboard(
     onCreateRequestClick: () -> Unit,
     onMyRequestsClick: () -> Unit,
-    onRequestStatusClick: () -> Unit,
-    onEmergencyClick: () -> Unit,
     onMapClick: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -96,35 +84,15 @@ fun VictimDashboard(
         ) {
             VictimDashboardCard(
                 title = "Yardım Talep Et",
-                color = Color(0xFF1E88E5),
+                color = Color(0xFFB21818),
                 modifier = Modifier.weight(1f),
                 onClick = onCreateRequestClick
             )
             VictimDashboardCard(
                 title = "Taleplerim",
-                color = Color(0xFF43A047),
+                color = Color(0xFFB21818),
                 modifier = Modifier.weight(1f),
                 onClick = onMyRequestsClick
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            VictimDashboardCard(
-                title = "Talep Durumu",
-                color = Color(0xFF8E24AA),
-                modifier = Modifier.weight(1f),
-                onClick = onRequestStatusClick
-            )
-            VictimDashboardCard(
-                title = "Acil Durum",
-                color = Color(0xFFE53935),
-                modifier = Modifier.weight(1f),
-                onClick = onEmergencyClick
             )
         }
 
@@ -136,7 +104,7 @@ fun VictimDashboard(
                 .height(80.dp)
                 .clickable { onMapClick() },
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFE75E1E))
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -196,8 +164,6 @@ fun VictimDashboardPreview() {
         VictimDashboard(
             onCreateRequestClick = {},
             onMyRequestsClick = {},
-            onRequestStatusClick = {},
-            onEmergencyClick = {},
             onMapClick = {},
             onLogout = {}
         )

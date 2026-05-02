@@ -82,7 +82,7 @@ fun VictimMapScreen(onBack: () -> Unit) {
                     MapView(ctx).apply {
                         setTileSource(TileSourceFactory.MAPNIK)
                         setMultiTouchControls(true)
-                        controller.setZoom(6.0)
+                        controller.setZoom(12.0)
                         controller.setCenter(GeoPoint(defaultLat, defaultLng))
 
                         resources.forEach { resource ->

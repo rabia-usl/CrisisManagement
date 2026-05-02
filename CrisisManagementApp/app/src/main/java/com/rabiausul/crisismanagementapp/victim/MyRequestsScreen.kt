@@ -1,5 +1,6 @@
 package com.rabiausul.crisismanagementapp.victim
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,11 +26,20 @@ fun MyRequestsScreen(onBack: () -> Unit) {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
     var requestToDelete by remember { mutableStateOf<AidRequest?>(null) }
+    var selectedRequest by remember { mutableStateOf<AidRequest?>(null) }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Talepleri yükle
+    // Detay ekranına geçildiyse onu göster
+    if (selectedRequest != null) {
+        RequestStatusScreen(
+            request = selectedRequest!!,
+            onBack = { selectedRequest = null }
+        )
+        return
+    }
+
     fun loadRequests() {
         scope.launch {
             isLoading = true
@@ -134,6 +144,7 @@ fun MyRequestsScreen(onBack: () -> Unit) {
                         items(requests) { request ->
                             MyRequestCard(
                                 request = request,
+                                onCardClick = { selectedRequest = request },
                                 onDeleteClick = { requestToDelete = request }
                             )
                         }
@@ -147,6 +158,7 @@ fun MyRequestsScreen(onBack: () -> Unit) {
 @Composable
 fun MyRequestCard(
     request: AidRequest,
+    onCardClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val urgencyColor = when (request.urgencyLevel) {
@@ -172,7 +184,9 @@ fun MyRequestCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
@@ -227,10 +241,8 @@ fun MyRequestCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Sadece PENDING durumundaki talepler iptal edilebilir
             if (request.status == "PENDING") {
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onDeleteClick,
                     modifier = Modifier.fillMaxWidth(),

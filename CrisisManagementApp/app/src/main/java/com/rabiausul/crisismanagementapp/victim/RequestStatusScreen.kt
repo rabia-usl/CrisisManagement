@@ -1,9 +1,11 @@
 package com.rabiausul.crisismanagementapp.victim
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -16,33 +18,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rabiausul.crisismanagementapp.api.RetrofitClient
 import com.rabiausul.crisismanagementapp.model.AidRequest
-import com.rabiausul.crisismanagementapp.model.RequestResourceMatch
+import com.rabiausul.crisismanagementapp.model.Assignment
 
 @Composable
-fun RequestStatusScreen(onBack: () -> Unit) {
-    var requests by remember { mutableStateOf<List<AidRequest>>(emptyList()) }
-    var matches by remember { mutableStateOf<List<RequestResourceMatch>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
+fun RequestStatusScreen(
+    request: AidRequest,
+    onBack: () -> Unit
+) {
+    var assignments by remember { mutableStateOf<List<Assignment>>(emptyList()) }
+    var isLoadingAssignments by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         try {
-            val requestResponse = RetrofitClient.api.getAllRequests()
-            val matchResponse = RetrofitClient.api.getAllMatches()
-            if (requestResponse.isSuccessful) requests = requestResponse.body() ?: emptyList()
-            if (matchResponse.isSuccessful) matches = matchResponse.body() ?: emptyList()
+            val response = RetrofitClient.api.getAssignmentsByRequest(request.requestId)
+            if (response.isSuccessful) {
+                assignments = response.body() ?: emptyList()
+            }
         } catch (e: Exception) {
-            errorMessage = "Bağlantı hatası: ${e.message}"
+            // Atama bilgisi yüklenemezse sessizce geç
         } finally {
-            isLoading = false
+            isLoadingAssignments = false
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // Başlık
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -54,36 +59,97 @@ fun RequestStatusScreen(onBack: () -> Unit) {
                 )
             }
             Text(
-                text = "Talep Durumu",
+                text = "Talep Detayı",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        when {
-            isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        // Talep Bilgileri Kartı
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Talep Bilgileri",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                DetailRow(label = "Kategori", value = request.category)
+                DetailRow(label = "Açıklama", value = request.description)
+                DetailRow(label = "Etkilenen Kişi", value = "${request.vulnerableCount} kişi")
+                DetailRow(
+                    label = "Aciliyet",
+                    value = when (request.urgencyLevel) {
+                        3 -> "Yüksek"
+                        2 -> "Orta"
+                        else -> "Düşük"
+                    },
+                    valueColor = when (request.urgencyLevel) {
+                        3 -> Color(0xFFE53935)
+                        2 -> Color(0xFFFB8C00)
+                        else -> Color(0xFF43A047)
+                    }
+                )
+                if (request.times != null) {
+                    DetailRow(label = "Oluşturulma", value = request.times.take(16).replace("T", " "))
                 }
             }
-            errorMessage.isNotEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = errorMessage, color = Color.Red)
-                }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Durum Timeline Kartı
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Talep Durumu",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                StatusTimeline(currentStatus = request.status)
             }
-            requests.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "Henüz talebiniz bulunmuyor")
-                }
-            }
-            else -> {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(requests) { request ->
-                        val requestMatches = matches.filter { it.requestId == request.requestId }
-                        RequestStatusCard(
-                            request = request,
-                            matches = requestMatches
-                        )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Atama Bilgileri Kartı
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Atama Bilgileri",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                if (isLoadingAssignments) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else if (assignments.isEmpty()) {
+                    Text(
+                        text = "Henüz atama yapılmamış",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                } else {
+                    assignments.forEach { assignment ->
+                        AssignmentItem(assignment = assignment)
+                        if (assignment != assignments.last()) {
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
                     }
                 }
             }
@@ -91,93 +157,152 @@ fun RequestStatusScreen(onBack: () -> Unit) {
     }
 }
 
+// Detay satırı bileşeni
 @Composable
-fun RequestStatusCard(
-    request: AidRequest,
-    matches: List<RequestResourceMatch>
+fun DetailRow(
+    label: String,
+    value: String,
+    valueColor: Color = Color.Unspecified
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = request.category,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color.Gray,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = valueColor,
+            modifier = Modifier.weight(2f)
+        )
+    }
+}
+
+// Durum timeline bileşeni
+@Composable
+fun StatusTimeline(currentStatus: String) {
+    val steps = listOf(
+        "PENDING" to "Talep Oluşturuldu",
+        "APPROVED" to "Onaylandı",
+        "COMPLETED" to "Tamamlandı"
+    )
+
+    // Reddedildiyse farklı göster
+    if (currentStatus == "REJECTED") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .background(Color(0xFFE53935), CircleShape)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = request.description, fontSize = 14.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Talep Reddedildi",
+                color = Color(0xFFE53935),
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+        }
+        return
+    }
 
-            // Durum Göstergesi
-            val statusColor = when (request.status) {
-                "PENDING" -> Color(0xFFFB8C00)
-                "APPROVED" -> Color(0xFF43A047)
-                "REJECTED" -> Color(0xFFE53935)
-                "COMPLETED" -> Color(0xFF1E88E5)
-                else -> Color.Gray
-            }
-            val statusText = when (request.status) {
-                "PENDING" -> "Bekliyor"
-                "APPROVED" -> "Onaylandı"
-                "REJECTED" -> "Reddedildi"
-                "COMPLETED" -> "Tamamlandı"
-                else -> request.status
-            }
+    val currentIndex = steps.indexOfFirst { it.first == currentStatus }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Durum: ", fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = statusColor),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = statusText,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        fontSize = 12.sp
+    steps.forEachIndexed { index, (_, label) ->
+        val isCompleted = index <= currentIndex
+        val isActive = index == currentIndex
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Nokta
+            Box(
+                modifier = Modifier
+                    .size(if (isActive) 20.dp else 14.dp)
+                    .background(
+                        when {
+                            isActive -> Color(0xFF1E88E5)
+                            isCompleted -> Color(0xFF43A047)
+                            else -> Color.LightGray
+                        },
+                        CircleShape
                     )
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = label,
+                fontSize = 14.sp,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                color = when {
+                    isActive -> Color(0xFF1E88E5)
+                    isCompleted -> Color(0xFF43A047)
+                    else -> Color.Gray
                 }
-            }
+            )
+        }
 
-            // Eşleştirmeler
-            if (matches.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Atanan Kaynaklar:",
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                matches.forEach { match ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Kaynak #${match.resourceId}",
-                            fontSize = 13.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            text = "Miktar: ${match.allocateQuantity}",
-                            fontSize = 13.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-            } else {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Henüz kaynak atanmadı",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
-            }
+        // Bağlantı çizgisi (son eleman değilse)
+        if (index < steps.size - 1) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 6.dp)
+                    .width(2.dp)
+                    .height(24.dp)
+                    .background(if (index < currentIndex) Color(0xFF43A047) else Color.LightGray)
+            )
+        }
+    }
+}
+
+// Atama kartı bileşeni
+@Composable
+fun AssignmentItem(assignment: Assignment) {
+    val statusText = when (assignment.status) {
+        "ASSIGNED" -> "Atandı"
+        "IN_PROGRESS" -> "Devam Ediyor"
+        "COMPLETED" -> "Tamamlandı"
+        else -> assignment.status
+    }
+    val statusColor = when (assignment.status) {
+        "ASSIGNED" -> Color(0xFFFB8C00)
+        "IN_PROGRESS" -> Color(0xFF1E88E5)
+        "COMPLETED" -> Color(0xFF43A047)
+        else -> Color.Gray
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = "Atama #${assignment.assignmentId}",
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Miktar: ${assignment.quantity}",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+        }
+        Card(
+            colors = CardDefaults.cardColors(containerColor = statusColor),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = statusText,
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                fontSize = 12.sp
+            )
         }
     }
 }
